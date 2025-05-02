@@ -96,4 +96,4 @@ This repository includes GitHub Actions workflows defined in the `.github/workfl
   - Triggered on pushes to the `main` branch.
   - Contains two jobs:
     - `test-and-deploy`: Installs dependencies, runs checks, tests, and then deploys all workers (`pnpm turbo deploy`). This step requires the `CLOUDFLARE_API_TOKEN` secret to be configured in your repository's GitHub secrets.
-    - `create-release-pr`: Uses [Changesets](https://github.com/changesets/changesets) to create a pull request that compiles changelogs and bumps package versions. This PR is primarily for documentation and versioning, as deployment happens directly on merge to `main`.
+    - `create-release-pr`: Uses [Changesets](https://github.com/changesets/changesets) to create a pull request that compiles changelogs and bumps package versions. This PR is primarily for documentation and versioning, as deployment happens directly on merge to `main`. **Note:** For this job to work, you must enable the `Allow GitHub Actions to create and approve pull requests` setting in your repository's Actions settings (Settings -> Actions -> General).
