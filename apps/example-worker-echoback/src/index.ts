@@ -1,9 +1,10 @@
+import { env } from 'cloudflare:workers'
 import { Hono } from 'hono'
 import { useWorkersLogger } from 'workers-tagged-logger'
 
 import { getRequestLogData, logger, useNotFound, useOnError } from '@repo/hono-helpers'
 
-import type { App } from './types'
+import type { App } from './context'
 
 const app = new Hono<App>()
 	.use(
@@ -21,6 +22,10 @@ const app = new Hono<App>()
 
 	.all('*', async (c) => {
 		const url = new URL(c.req.url)
+
+		// we can also access env variables via
+		// import { env } from 'cloudflare:workers'
+		logger.info(`release: ${env.SENTRY_RELEASE}`)
 
 		let body: string | undefined
 		if (['PUT', 'POST'].includes(c.req.method) && c.req.raw.body !== null) {
