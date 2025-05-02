@@ -2,6 +2,11 @@
 
 This template provides a structured starting point for managing multiple Cloudflare Workers within a single monorepo. It leverages pnpm workspaces, Turborepo for build orchestration, and a Justfile for convenient command execution.
 
+## Prerequisites
+
+- Node.js v22 or later
+- pnpm v10 or later
+
 ## Getting Started
 
 **Install Dependencies:**
