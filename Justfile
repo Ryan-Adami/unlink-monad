@@ -1,10 +1,12 @@
-set shell := ["zsh", "-c"]
-
-alias up := update
+# This Justfile isn't strictly necessary, but it's
+# a convenient way to run commands in the repo
+# without needing to remember all commands.
 
 [private]
 @help:
   just --list
+
+alias gen := new-worker
 
 # Install dependencies
 install:
@@ -15,42 +17,36 @@ install:
 dev *flags:
   pnpm run dev {{flags}}
 
-# Run preview script
-[no-cd]
-preview *flags:
-  pnpm run preview {{flags}}
-
 # Create changeset
 cs:
   pnpm run-changeset-new
-
-# Fix deps, lint, format, etc.
-[no-cd]
-fix *flags:
-  pnpm runx fix {{flags}}
-
-# Run test cli
-[no-cd]
-test *flags:
-  pnpm runx test --auto-build {{flags}}
-
-# Run tests for all packages
-test-all *flags:
-  bun turbo test:ci --log-order=grouped {{flags}}
-
-[no-cd]
-build *flags:
-  bun turbo build {{flags}}
 
 # Check for issues with deps/lint/types/format
 [no-cd]
 check *flags:
   pnpm runx check {{flags}}
 
-# Update things in the repo
-update *flags:
-  pnpm runx update {{flags}}
+# Fix deps, lint, format, etc.
+[no-cd]
+fix *flags:
+  pnpm runx fix {{flags}}
 
-# Run turbo generate
-gen:
-  pnpm run gen
+[no-cd]
+test *flags:
+  pnpm vitest {{flags}}
+
+[no-cd]
+build *flags:
+  pnpm turbo build {{flags}}
+
+# Deploy Workers, etc.
+deploy *flags:
+  pnpm turbo deploy {{flags}}
+
+# Update dependencies using syncpack
+update-deps:
+  pnpm update-deps
+
+# Create a new Cloudflare Worker from a template (see `turbo/generators` for details)
+new-worker:
+  pnpm run-turbo-gen

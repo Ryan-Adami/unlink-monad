@@ -1,23 +1,15 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "example-worker-echoback",
-	"account_id": "f9b1e1e2cf50cca79a58e395b6084239", // main
 	"main": "src/index.ts",
-	"compatibility_date": "2025-03-12",
+	"compatibility_date": "2025-04-28",
 	"compatibility_flags": ["nodejs_compat"],
-	"workers_dev": true,
-	"preview_urls": false,
-	"logpush": true,
 	"routes": [],
+	"logpush": true,
 	"observability": {
-		"enabled": true,
-		"head_sampling_rate": 1
-	},
-	"placement": {
-		"mode": "off"
+		"enabled": true
 	},
 	"vars": {
-		"NAME": "example-worker-echoback",
 		"ENVIRONMENT": "development", // overridden during deployment
 		"SENTRY_RELEASE": "unknown" // overridden during deployment
 	}
