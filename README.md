@@ -75,3 +75,20 @@ Here are some key commands:
 - `just new-worker` (or `just gen`): Generate a new worker service using the template.
 
 You can also run most commands directly using `pnpm` and `turbo` if you prefer (e.g., `pnpm install`, `pnpm turbo build`). See the `Justfile` and `package.json` files for more details.
+
+## GitHub Actions
+
+This repository includes GitHub Actions workflows defined in the `.github/workflows` directory:
+
+- **`branches.yml` (Branches Workflow):**
+
+  - Triggered on pushes to any branch _except_ `main`.
+  - Installs dependencies.
+  - Runs checks (`pnpm check:ci`) and tests (`pnpm test:ci`)
+
+- **`release.yml` (Release Workflow):**
+
+  - Triggered on pushes to the `main` branch.
+  - Contains two jobs:
+    - `test-and-deploy`: Installs dependencies, runs checks, tests, and then deploys all workers (`pnpm turbo deploy`). This step requires the `CLOUDFLARE_API_TOKEN` secret to be configured in your repository's GitHub secrets.
+    - `create-release-pr`: Uses [Changesets](https://github.com/changesets/changesets) to create a pull request that compiles changelogs and bumps package versions. This PR is primarily for documentation and versioning, as deployment happens directly on merge to `main`.
