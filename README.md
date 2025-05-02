@@ -6,12 +6,12 @@ This template provides a fully featured monorepo for managing multiple Cloudflar
 
 Managing multiple related services (like Cloudflare Workers) in separate repositories can become complex. A monorepo approach offers several advantages:
 
-- **Simplified dependency management:** `pnpm workspaces` allow you to manage dependencies across all your workers and shared packages from a single place. The tool `syncpack` (configured via `.syncpackrc.cjs`) help keep versions consistent.
-- **Code sharing and reuse:** Easily create and share common logic, types, and utilities between workers by placing them in the `packages/` directory. Changes to shared code are immediately available to all consumers.
-- **Atomic commits:** Changes affecting multiple workers or shared libraries can be committed together, making the history easier to understand and reducing the risk of inconsistencies.
-- **Consistent tooling:** Apply the same build, test, linting, and formatting configurations (e.g., via Turborepo in `turbo.json` and shared configs in `packages/`) across all projects, ensuring consistent tooling and code quality across Workers.
-- **Streamlined CI/CD:** A single pipeline (like the ones in `.github/workflows/`) can build, test, and deploy all Workers, simplifying the release process.
-- **Easier refactoring:** Refactoring code that spans multiple workers or shared packages is significantly easier within a single repository.
+- **Simplified dependency management** - `pnpm workspaces` allow you to manage dependencies across all your workers and shared packages from a single place. The tool `syncpack` (configured via `.syncpackrc.cjs`) help keep versions consistent.
+- **Code sharing and reuse** - Easily create and share common logic, types, and utilities between workers by placing them in the `packages/` directory. Changes to shared code are immediately available to all consumers.
+- **Atomic commits** - Changes affecting multiple workers or shared libraries can be committed together, making the history easier to understand and reducing the risk of inconsistencies.
+- **Consistent tooling** - Apply the same build, test, linting, and formatting configurations (e.g., via Turborepo in `turbo.json` and shared configs in `packages/`) across all projects, ensuring consistent tooling and code quality across Workers.
+- **Streamlined CI/CD** - A single pipeline (like the ones in `.github/workflows/`) can build, test, and deploy all Workers, simplifying the release process.
+- **Easier refactoring** - Refactoring code that spans multiple workers or shared packages is significantly easier within a single repository.
 
 ## Prerequisites
 
@@ -60,16 +60,16 @@ Note: This will also deploy the example application in `apps/example-worker-echo
 
 This monorepo is organized as follows:
 
-- `apps/`: Contains individual Cloudflare Worker applications. Each subdirectory is typically a deployable unit.
-  - `example-worker-echoback`: An example worker demonstrating basic functionality.
-- `packages/`: Shared libraries, utilities, and configurations used across multiple applications.
-- `packages/tools/`: A package containing various scripts and a CLI for developing the monorepo.
+- `apps/` - Contains individual Cloudflare Worker applications. Each subdirectory is typically a deployable unit.
+  - `example-worker-echoback` - An example worker demonstrating basic functionality.
+- `packages/` - Shared libraries, utilities, and configurations used across multiple applications.
+- `packages/tools/` - A package containing various scripts and a CLI for developing the monorepo.
   - Each Workers application's package.json scripts point to scripts within `packages/tools/bin/`. This makes it easier to keep scripts consistent across Workers.
-- `turbo/`: Contains `turbo gen` templates
-- `Justfile`: Defines convenient aliases for common development tasks.
-- `pnpm-workspace.yaml`: Defines the pnpm workspace structure.
-- `turbo.json`: Configures Turborepo build and task execution.
-- `.syncpackrc.cjs`: Configures `syncpack` for managing and synchronizing dependency versions across packages in the monorepo.
+- `turbo/` - Contains `turbo gen` templates
+- `Justfile` - Defines convenient aliases for common development tasks.
+- `pnpm-workspace.yaml` - Defines the pnpm workspace structure.
+- `turbo.json` - Configures Turborepo build and task execution.
+- `.syncpackrc.cjs` - Configures `syncpack` for managing and synchronizing dependency versions across packages in the monorepo.
   - The included configuration ensures that dependencies are all kept in sync and use a pinned version so that we can choose when to update dependencies.
 
 ## Available Commands
@@ -78,17 +78,17 @@ This repository uses a `Justfile` to provide easy access to common commands. You
 
 Here are some key commands:
 
-- `just`: Show a list of available scripts.
-- `just install`: Install all dependencies.
-- `just dev`: Start the development server for all workers.
-- `just build`: Build all workers.
-- `just test`: Run tests for all workers.
-- `just check`: Run linting, type checking, and formatting checks.
-- `just fix`: Automatically fix linting and formatting issues.
-- `just deploy`: Deploy workers (requires configuration).
-- `just cs`: Create a new changeset for versioning.
-- `just update-deps`: Update dependencies across the monorepo.
-- `just new-worker` (or `just gen`): Generate a new worker service using the template.
+- `just` - Show a list of available scripts.
+- `just install` - Install all dependencies.
+- `just dev` - Start the development server for all workers.
+- `just build` - Build all workers.
+- `just test` - Run tests for all workers.
+- `just check` - Run linting, type checking, and formatting checks.
+- `just fix` - Automatically fix linting and formatting issues.
+- `just deploy` - Deploy workers (requires configuration).
+- `just cs` - Create a new changeset for versioning.
+- `just update-deps` - Update dependencies across the monorepo.
+- `just new-worker` (or `just gen`) - Generate a new worker service using the template.
 
 You can also run most commands directly using `pnpm` and `turbo` if you prefer (e.g., `pnpm install`, `pnpm turbo build`). See the `Justfile` and `package.json` files for more details.
 
