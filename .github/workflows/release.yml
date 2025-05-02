@@ -49,6 +49,8 @@ jobs:
         with:
           node-version: lts/*
           cache: 'pnpm'
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile --child-concurrency=10 --filter .
       - name: Create Release Pull Request
         uses: changesets/action@v1
         env:
