@@ -66,6 +66,8 @@ This monorepo is organized as follows:
 - `packages/tools/` - A package containing various scripts and a CLI for developing the monorepo.
   - Each Workers application's package.json scripts point to scripts within `packages/tools/bin/`. This makes it easier to keep scripts consistent across Workers.
 - `turbo/` - Contains `turbo gen` templates
+  - `fetch-worker`: A basic Cloudflare Worker template.
+  - `fetch-worker-vite`: A Cloudflare Worker template using Vite for bundling and development.
 - `Justfile` - Defines convenient aliases for common development tasks.
 - `pnpm-workspace.yaml` - Defines the pnpm workspace structure.
 - `turbo.json` - Configures Turborepo build and task execution.
