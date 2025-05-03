@@ -1,5 +1,8 @@
+import { createRequire } from 'node:module'
 import { inspect } from 'node:util'
 import ts from 'typescript'
+
+const require = createRequire(import.meta.url)
 
 export function getTSConfig(configPath = 'tsconfig.json'): ts.CompilerOptions {
 	const jsonCompopts = getCompilerOptionsJSONFollowExtends(configPath)
