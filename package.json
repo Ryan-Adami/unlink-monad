@@ -1,5 +1,5 @@
 {
-	"name": "workers-monorepo",
+	"name": "workers-monorepo-template",
 	"version": "1.0.0",
 	"private": true,
 	"sideEffects": false,
