@@ -2,6 +2,14 @@
 
 This template provides a fully featured monorepo for managing multiple Cloudflare Workers.
 
+## Quick Start
+
+You can bootstrap a new monorepo using this template by running:
+
+```bash
+npm create workers-monorepo@latest
+```
+
 ## Why a Monorepo?
 
 Managing multiple related services (like Cloudflare Workers) in separate repositories can become complex. A monorepo approach offers several advantages:
