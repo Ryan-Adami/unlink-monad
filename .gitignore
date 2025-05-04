@@ -35,7 +35,6 @@ coverage
 .next/
 out/
 dist
-dist2
 
 # Debug
 npm-debug.log*
