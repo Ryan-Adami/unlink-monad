@@ -1,1 +1,1 @@
-export * from '@repo/zod'
+export { z } from '@repo/zod'
