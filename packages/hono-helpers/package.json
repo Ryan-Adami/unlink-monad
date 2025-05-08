@@ -18,11 +18,11 @@
 		"workers-tagged-logger": "0.10.0"
 	},
 	"devDependencies": {
-		"@cloudflare/vitest-pool-workers": "0.8.24",
-		"@cloudflare/workers-types": "4.20250503.0",
+		"@cloudflare/vitest-pool-workers": "0.8.26",
+		"@cloudflare/workers-types": "4.20250508.0",
 		"@repo/eslint-config": "workspace:*",
 		"@repo/tools": "workspace:*",
 		"@repo/typescript-config": "workspace:*",
-		"vitest": "3.1.2"
+		"vitest": "3.1.3"
 	}
 }
