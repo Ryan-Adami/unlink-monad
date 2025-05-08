@@ -99,6 +99,7 @@ Here are some key commands:
 - `just cs` - Create a new changeset for versioning.
 - `just update-deps` - Update dependencies across the monorepo.
 - `just new-worker` - Generate a new worker service using the template.
+- `just new-package` - Generate a new package for sharing code between other apps/packages.
 
 You can also run most commands directly using `pnpm` and `turbo` if you prefer (e.g., `pnpm install`, `pnpm turbo build`). See the `Justfile` and `package.json` files for more details.
 
