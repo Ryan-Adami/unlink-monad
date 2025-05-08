@@ -9,4 +9,5 @@ syncpack update
 # Run fix if there are any changes
 git status --porcelain | grep 'package.json' &&
 	syncpack fix-mismatches &&
+	runx fix --format &&
 	pnpm install --child-concurrency=10 || true
