@@ -31,16 +31,16 @@ interface TSModule {
  * ```
  */
 export class TSHelpers {
-	private _ts: TSModule | undefined
+	#ts: TSModule | undefined
 	public get ts(): TSModule {
-		if (!this._ts) {
+		if (!this.#ts) {
 			throw new Error('TSHelpers not initialized. Call init() first.')
 		}
-		return this._ts
+		return this.#ts
 	}
 
 	async init(): Promise<TSHelpers> {
-		this._ts = (await import('typescript')) as TSModule
+		this.#ts = (await import('typescript')) as TSModule
 		return this
 	}
 
