@@ -43,6 +43,7 @@ build *flags:
   pnpm turbo build {{flags}}
 
 # Deploy Workers, etc.
+[no-cd]
 deploy *flags:
   pnpm turbo deploy {{flags}}
 
