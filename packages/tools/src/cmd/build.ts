@@ -3,8 +3,7 @@ import { Command } from '@commander-js/extra-typings'
 import { validateArg } from '@jahands/cli-tools/args'
 import * as esbuild from 'esbuild'
 import { match } from 'ts-pattern'
-
-import { z } from '@repo/zod'
+import { z } from 'zod'
 
 import { TSHelpers } from '../tsconfig'
 
@@ -58,13 +57,13 @@ buildCmd
 	.option('--no-minify', `Don't minify output`)
 	.option(
 		'--sourcemap <string>',
-		'Include sourcemaps in the output',
-		validateArg(z.union([z.enum(['both', 'linked', 'inline', 'external']), z.stringbool()])),
+		`Include sourcemaps in the output. (options: both, linked, inline, external, true, false)`,
+		validateArg(z.union([z.enum(['both', 'linked', 'inline', 'external']), z.coerce.boolean()])),
 		'both'
 	)
 	.option(
 		'--platform <string>',
-		'Optional platform to target (options: cloudflare_workers,browser, node, neutral)',
+		'Optional platform to target. (options: cloudflare_workers,browser, node, neutral)',
 		validateArg(z.enum(['cloudflare_workers', 'browser', 'node', 'neutral'])),
 		'cloudflare_workers'
 	)

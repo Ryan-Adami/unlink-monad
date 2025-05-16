@@ -19,7 +19,6 @@
 	"dependencies": {
 		"@commander-js/extra-typings": "13.1.0",
 		"@jahands/cli-tools": "0.10.0",
-		"@repo/zod": "workspace:*",
 		"@types/node": "22.15.16",
 		"cli-table3": "0.6.5",
 		"commander": "13.1.0",
@@ -28,6 +27,7 @@
 		"memoize-one": "6.0.0",
 		"ts-pattern": "5.7.0",
 		"tsx": "4.19.4",
+		"zod": "3.24.4",
 		"zx": "8.5.3"
 	},
 	"devDependencies": {
