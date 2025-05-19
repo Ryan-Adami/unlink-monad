@@ -1,7 +1,7 @@
 import * as find from 'empathic/find'
 import * as pkg from 'empathic/package'
 import memoizeOne from 'memoize-one'
-import { z } from 'zod'
+import { z } from 'zod/v4'
 
 export const getRepoRoot = memoizeOne(() => {
 	const pnpmLock = z
