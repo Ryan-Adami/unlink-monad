@@ -10,10 +10,10 @@
 install:
   pnpm install --child-concurrency=10
 
-# Run dev script
+# Run dev script. Runs turbo dev if not in a specific project directory.
 [no-cd]
 dev *flags:
-  pnpm run dev {{flags}}
+  pnpm runx dev {{flags}}
 
 # Run preview script (usually only used in apps using Vite)
 [no-cd]

@@ -6,6 +6,7 @@ import { catchProcessError } from '@jahands/cli-tools/proc'
 import { buildCmd } from '../cmd/build'
 import { checkCmd } from '../cmd/check'
 import { checkWorkersTypesCmd } from '../cmd/check-workers-types'
+import { devCmd } from '../cmd/dev'
 import { fixCmd } from '../cmd/fix'
 
 program
@@ -19,6 +20,7 @@ program
 	.addCommand(fixCmd)
 	.addCommand(buildCmd)
 	.addCommand(checkCmd)
+	.addCommand(devCmd)
 
 	// Don't hang for unresolved promises
 	.hook('postAction', () => process.exit(0))
