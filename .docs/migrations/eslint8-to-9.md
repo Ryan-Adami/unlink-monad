@@ -431,9 +431,9 @@ Update lint scripts:
 
 ### Step 4: Update Tools Package
 
-#### 4.1 Replace packages/tools/bin/run-eslint-default with packages/tools/bin/run-eslint
+#### 4.1 Rename and update the existing ESLint script
 
-Delete `packages/tools/bin/run-eslint-default` and create `packages/tools/bin/run-eslint`:
+**For LLMs:** Look for either `packages/tools/bin/run-eslint-default` OR `packages/tools/bin/run-eslint-workers` (older templates used different names). Rename whichever exists to `packages/tools/bin/run-eslint` and replace its contents with:
 
 ```bash
 #!/bin/bash
@@ -476,7 +476,7 @@ else
 fi
 ```
 
-Make it executable: `chmod +x packages/tools/bin/run-eslint`
+**Note:** The file will keep its executable permissions from the rename.
 
 #### 4.2 Update packages/tools/src/cmd/check.ts
 
@@ -580,10 +580,14 @@ export default defineConfig([...config])
 
 #### 6.2 Update package.json scripts
 
-In all package.json files, replace:
+In all package.json files, replace either:
 
 ```json
 "check:lint": "run-eslint-default"
+```
+OR:
+```json
+"check:lint": "run-eslint-workers"
 ```
 
 With:
@@ -597,10 +601,10 @@ With:
 Update template files in `turbo/generators/templates/`:
 
 - `fetch-worker/package.json.hbs`
-- `fetch-worker-vite/package.json.hbs`
+- `fetch-worker-vite/package.json.hbs`  
 - `package/package.json.hbs`
 
-Replace `"check:lint": "run-eslint-default"` with `"check:lint": "run-eslint"`
+Replace `"check:lint": "run-eslint-default"` or `"check:lint": "run-eslint-workers"` with `"check:lint": "run-eslint"`
 
 ### Step 8: Update VS Code Settings
 
@@ -618,11 +622,11 @@ Update `.vscode/settings.json` to include `eslint.config.ts` in file association
 
 #### 9.1 Update CLAUDE.md
 
-Replace references to `run-eslint-default` with `run-eslint`.
+Replace references to `run-eslint-default` or `run-eslint-workers` with `run-eslint`.
 
 #### 9.2 Update .cursor/rules/package-management.mdc
 
-Replace `"check:lint": "run-eslint-default"` with `"check:lint": "run-eslint"`.
+Replace `"check:lint": "run-eslint-default"` or `"check:lint": "run-eslint-workers"` with `"check:lint": "run-eslint"`.
 
 ### Step 10: Testing the Migration
 
@@ -647,13 +651,13 @@ Replace `"check:lint": "run-eslint-default"` with `"check:lint": "run-eslint"`.
 - [ ] Updated TypeScript configs to exclude `eslint.config.ts`
 - [ ] Replaced root `.eslintrc.cjs` with `eslint.config.ts`
 - [ ] Updated root package.json scripts
-- [ ] Replaced `packages/tools/bin/run-eslint-default` with `packages/tools/bin/run-eslint`
+- [ ] Renamed existing ESLint script (`run-eslint-default` or `run-eslint-workers`) to `run-eslint` and updated contents
 - [ ] Updated `packages/tools/src/cmd/check.ts`
 - [ ] Created `packages/tools/eslint.config.ts`
 - [ ] Deleted `packages/tools/.eslintrc.cjs`
 - [ ] Renamed `turbo.json` to `turbo.jsonc` and updated lint tasks
 - [ ] Replaced all package `.eslintrc.cjs` files with `eslint.config.ts`
-- [ ] Updated all package.json scripts from `run-eslint-default` to `run-eslint`
+- [ ] Updated all package.json scripts from `run-eslint-default` or `run-eslint-workers` to `run-eslint`
 - [ ] Updated turbo generator templates
 - [ ] Updated VS Code settings
 - [ ] Updated documentation files
@@ -664,10 +668,9 @@ Replace `"check:lint": "run-eslint-default"` with `"check:lint": "run-eslint"`.
 
 #### Issue: "run-eslint: command not found"
 
-**Solution:** Ensure the new script is executable:
+**Solution:** Ensure the script was properly renamed and refresh bin links:
 
 ```bash
-chmod +x packages/tools/bin/run-eslint
 pnpm install  # Refresh bin links
 ```
 
