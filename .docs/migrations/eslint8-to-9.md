@@ -409,7 +409,9 @@ Add `"${configDir}/eslint.config.ts"` to the exclude array:
 
 #### 3.1 Replace .eslintrc.cjs with eslint.config.ts
 
-Delete `.eslintrc.cjs` and create `eslint.config.ts`:
+Delete `.eslintrc.cjs` and create `eslint.config.ts`.
+
+**Note:** Most monorepo roots don't use React, so typically use the default config:
 
 ```typescript
 import { defineConfig, getConfig } from '@repo/eslint-config'
@@ -560,7 +562,11 @@ Make these exact changes to the `tasks` section:
 
 #### 6.1 For each package/app, replace .eslintrc.cjs with eslint.config.ts
 
-**For packages using default config:**
+**For LLMs:** Check each package's `package.json` file for dependencies. Use the React config if the package has ANY of these dependencies:
+
+- Any package starting with `react` (e.g., `react`, `react-dom`, `@types/react`)
+
+**For packages using default config (most packages):**
 
 ```typescript
 import { defineConfig, getConfig } from '@repo/eslint-config'
@@ -570,7 +576,7 @@ const config = getConfig(import.meta.url)
 export default defineConfig([...config])
 ```
 
-**For packages using React config:**
+**For packages using React config (packages with React dependencies):**
 
 ```typescript
 import { defineConfig } from '@repo/eslint-config'
