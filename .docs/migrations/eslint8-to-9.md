@@ -492,6 +492,8 @@ fi
 
 #### 4.2 Update packages/tools/src/cmd/check.ts
 
+**Important for LLMs:** When updating files in `packages/tools/`, do NOT add imports from 'zx' (e.g., `import { $ } from 'zx'`). The tools package uses `import 'zx/globals'` which makes zx functions available globally.
+
 Update the lint check to use the new command:
 
 ```typescript
@@ -638,12 +640,12 @@ Update `.vscode/settings.json`:
 }
 ```
 
-2. **Include `eslint.config.ts` in file associations** by adding it to the explorer.fileNesting.patterns:
+2. **Update file nesting patterns** by adding `eslint.config.ts` and `turbo.jsonc` to the explorer.fileNesting.patterns:
 
 ```json
 {
 	"explorer.fileNesting.patterns": {
-		"package.json": "eslint.config.ts, CLAUDE.md, AGENT.md, ...(other patterns)"
+		"package.json": "eslint.config.ts, turbo.jsonc, CLAUDE.md, AGENT.md, ...(other patterns)"
 	}
 }
 ```
