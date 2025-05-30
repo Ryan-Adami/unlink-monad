@@ -23,6 +23,10 @@
 	// I always prefer format on save
 	"editor.formatOnSave": true,
 
+	"eslint.options": {
+		"flags": ["unstable_config_lookup_from_file"]
+	},
+
 	"github-actions.workflows.pinned.workflows": [
 		".github/workflows/release.yml",
 		".github/workflows/branches.yml"

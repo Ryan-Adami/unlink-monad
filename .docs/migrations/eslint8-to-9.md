@@ -619,8 +619,18 @@ Replace `"check:lint": "run-eslint-default"` or `"check:lint": "run-eslint-worke
 
 ### Step 8: Update VS Code Settings
 
-Update `.vscode/settings.json` to include `eslint.config.ts` in file associations:
+Update `.vscode/settings.json`:
 
+1. **Add ESLint 9 support** by adding this to the settings:
+```json
+{
+	"eslint.options": {
+		"flags": ["unstable_config_lookup_from_file"]
+	}
+}
+```
+
+2. **Include `eslint.config.ts` in file associations** by adding it to the explorer.fileNesting.patterns:
 ```json
 {
 	"explorer.fileNesting.patterns": {
