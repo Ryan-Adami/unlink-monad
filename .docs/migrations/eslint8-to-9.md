@@ -665,8 +665,7 @@ Replace `"check:lint": "run-eslint-default"` or `"check:lint": "run-eslint-worke
 1. **Install dependencies**: `pnpm install`
 2. **Verify ESLint version**: `pnpm eslint --version` (should show 9.x.x)
 3. **Test linting**: `run-eslint` or `just check`
-4. **Test auto-fix**: `FIX_ESLINT=1 run-eslint` or `just fix`
-5. **Run full checks**: `just check`
+4. **Run full checks**: `just check`
 
 **Note**: Use `pnpm eslint --version` to check the ESLint version, not `run-eslint --version`. The `run-eslint` command is a wrapper script for use within the monorepo's script system.
 
