@@ -433,7 +433,7 @@ Update lint scripts:
 
 #### 4.1 Rename and update the existing ESLint script
 
-**For LLMs:** Look for either `packages/tools/bin/run-eslint-default` OR `packages/tools/bin/run-eslint-workers` (older templates used different names). Rename whichever exists to `packages/tools/bin/run-eslint` and replace its contents with:
+**For LLMs:** Look for either `packages/tools/bin/run-eslint-default` OR `packages/tools/bin/run-eslint-workers` (older templates used different names). Rename whichever exists to `packages/tools/bin/run-eslint` and replace its contents with this EXACT script (do not modify or create your own version):
 
 ```bash
 #!/bin/bash
