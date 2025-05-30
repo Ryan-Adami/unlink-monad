@@ -5,14 +5,16 @@ This guide provides step-by-step instructions for migrating a repository based o
 ## Overview
 
 **Before (ESLint 8):**
+
 - Uses `.eslintrc.cjs` files throughout the monorepo
 - Single shared config: `packages/eslint-config/default.cjs`
 - Script command: `run-eslint-default`
 - Legacy configuration format
 
 **After (ESLint 9):**
+
 - Uses `eslint.config.ts` files throughout the monorepo
-- Multiple shared configs with TypeScript support  
+- Multiple shared configs with TypeScript support
 - Script command: `run-eslint`
 - Flat configuration format with better TypeScript integration
 
@@ -324,11 +326,7 @@ Add `"${configDir}/eslint.config.ts"` to the exclude array:
 	"$schema": "https://json.schemastore.org/tsconfig",
 	"display": "Default",
 	"include": ["${configDir}/**/*.ts", "${configDir}/**/*.tsx"],
-	"exclude": [
-		"${configDir}/node_modules/", 
-		"${configDir}/dist/", 
-		"${configDir}/eslint.config.ts"
-	],
+	"exclude": ["${configDir}/node_modules/", "${configDir}/dist/", "${configDir}/eslint.config.ts"],
 	"compilerOptions": {
 		"composite": false,
 		"declaration": true,
@@ -363,11 +361,7 @@ Add `"${configDir}/eslint.config.ts"` to the exclude array:
 		"${configDir}/**/*.ts",
 		"${configDir}/**/*.tsx"
 	],
-	"exclude": [
-		"${configDir}/node_modules/", 
-		"${configDir}/dist/", 
-		"${configDir}/eslint.config.ts"
-	],
+	"exclude": ["${configDir}/node_modules/", "${configDir}/dist/", "${configDir}/eslint.config.ts"],
 	"compilerOptions": {
 		"target": "es2022",
 		"lib": ["es2022"],
@@ -399,11 +393,7 @@ Add `"${configDir}/eslint.config.ts"` to the exclude array:
 	"$schema": "https://json.schemastore.org/tsconfig",
 	"extends": "@repo/typescript-config/workers.json",
 	"include": ["${configDir}/**/*.ts", "${configDir}/**/*.tsx"],
-	"exclude": [
-		"${configDir}/node_modules/", 
-		"${configDir}/dist/", 
-		"${configDir}/eslint.config.ts"
-	],
+	"exclude": ["${configDir}/node_modules/", "${configDir}/dist/", "${configDir}/eslint.config.ts"],
 	"compilerOptions": {
 		"types": ["@cloudflare/workers-types", "@cloudflare/vitest-pool-workers"]
 	}
@@ -589,11 +579,13 @@ export default defineConfig([...config])
 #### 6.2 Update package.json scripts
 
 In all package.json files, replace:
+
 ```json
 "check:lint": "run-eslint-default"
 ```
 
 With:
+
 ```json
 "check:lint": "run-eslint"
 ```
@@ -603,7 +595,7 @@ With:
 Update template files in `turbo/generators/templates/`:
 
 - `fetch-worker/package.json.hbs`
-- `fetch-worker-vite/package.json.hbs`  
+- `fetch-worker-vite/package.json.hbs`
 - `package/package.json.hbs`
 
 Replace `"check:lint": "run-eslint-default"` with `"check:lint": "run-eslint"`
@@ -671,6 +663,7 @@ Replace `"check:lint": "run-eslint-default"` with `"check:lint": "run-eslint"`.
 #### Issue: "run-eslint: command not found"
 
 **Solution:** Ensure the new script is executable:
+
 ```bash
 chmod +x packages/tools/bin/run-eslint
 pnpm install  # Refresh bin links
