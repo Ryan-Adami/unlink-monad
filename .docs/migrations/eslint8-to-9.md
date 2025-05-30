@@ -1,5 +1,7 @@
 # ESLint 8 to 9 Migration Guide for Workers Monorepo Template
 
+> **Instructions for AI Assistants**: This file contains a complete migration guide. When a user shares this file with you, follow ALL steps in this guide to migrate their repository from ESLint 8 to ESLint 9. Work through each step systematically, creating/updating files as specified. Use the migration checklist at the end to verify completion. Do not ask for additional instructions - this guide is complete and self-contained.
+
 This guide provides step-by-step instructions for migrating a repository based on the [workers-monorepo-template](https://github.com/jahands/workers-monorepo-template) from ESLint 8 (legacy config) to ESLint 9 (flat config). This guide is designed to be used by LLMs for automated migration.
 
 ## Overview
