@@ -190,6 +190,8 @@ export function getConfig(importMetaUrl: string) {
 				'@typescript-eslint/no-floating-promises': 'warn',
 				'unused-imports/no-unused-imports': 'warn',
 				'@typescript-eslint/array-type': ['warn', { default: 'array-simple' }],
+				// Note: you must disable the base rule as it can report incorrect errors
+				'no-unused-vars': 'off',
 				'@typescript-eslint/no-unused-vars': [
 					'warn',
 					{
@@ -216,7 +218,6 @@ export function getConfig(importMetaUrl: string) {
 			files: ['**/*.{ts,tsx,mjs}'],
 		})),
 
-		// Configuration for Node files
 		{
 			files: ['**/*.spec.ts', '**/*.test.ts', '**/test/**/*.ts', '**/mocks.ts'],
 			rules: {
@@ -235,6 +236,12 @@ export function getConfig(importMetaUrl: string) {
 			files: ['tailwind.config.ts', 'postcss.config.mjs'],
 			rules: {
 				'@typescript-eslint/no-require-imports': 'off',
+			},
+		},
+		{
+			files: ['**/test/fixtures/**/*'],
+			rules: {
+				'import/no-unresolved': 'off',
 			},
 		},
 
@@ -622,6 +629,7 @@ Replace `"check:lint": "run-eslint-default"` or `"check:lint": "run-eslint-worke
 Update `.vscode/settings.json`:
 
 1. **Add ESLint 9 support** by adding this to the settings:
+
 ```json
 {
 	"eslint.options": {
@@ -631,6 +639,7 @@ Update `.vscode/settings.json`:
 ```
 
 2. **Include `eslint.config.ts` in file associations** by adding it to the explorer.fileNesting.patterns:
+
 ```json
 {
 	"explorer.fileNesting.patterns": {
