@@ -64,12 +64,10 @@
 			"outputLogs": "new-only"
 		},
 		"check:types": {
-			"dependsOn": ["build", "^check:types", "topo"],
+			"dependsOn": ["build", "topo"],
 			"outputLogs": "new-only"
 		},
 		"check:lint": {
-			// does not depend on ^check:lint because it's better to run it
-			// from the root when needing to lint multiple packages
 			"dependsOn": ["build", "topo"],
 			"outputLogs": "new-only",
 			"env": ["FIX_ESLINT"]
