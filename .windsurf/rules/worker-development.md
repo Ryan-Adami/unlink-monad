@@ -78,20 +78,20 @@ app.use('*', cors(), logger())
 
 ```jsonc
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "worker-name",
-	"main": "src/index.ts",
-	"compatibility_date": "2025-04-28",
-	"compatibility_flags": ["nodejs_compat"],
-	"routes": [],
-	"logpush": true,
-	"observability": {
-		"enabled": true,
-	},
-	"vars": {
-		"ENVIRONMENT": "development", // overridden during deployment
-		"SENTRY_RELEASE": "unknown", // overridden during deployment
-	},
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "worker-name",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-04-28",
+  "compatibility_flags": ["nodejs_compat"],
+  "routes": [],
+  "logpush": true,
+  "observability": {
+    "enabled": true,
+  },
+  "vars": {
+    "ENVIRONMENT": "development", // overridden during deployment
+    "SENTRY_RELEASE": "unknown", // overridden during deployment
+  },
 }
 ```
 
@@ -114,14 +114,14 @@ import { describe, expect, it } from 'vitest'
 import worker from '../../index'
 
 describe('Worker', () => {
-	it('responds with expected output', async () => {
-		const request = new Request('http://example.com/')
-		const ctx = createExecutionContext()
-		const response = await worker.fetch(request, env, ctx)
-		await waitOnExecutionContext(ctx)
+  it('responds with expected output', async () => {
+    const request = new Request('http://example.com/')
+    const ctx = createExecutionContext()
+    const response = await worker.fetch(request, env, ctx)
+    await waitOnExecutionContext(ctx)
 
-		expect(response.status).toBe(200)
-	})
+    expect(response.status).toBe(200)
+  })
 })
 ```
 

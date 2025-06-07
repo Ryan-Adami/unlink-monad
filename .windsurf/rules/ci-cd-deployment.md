@@ -64,20 +64,20 @@ Each worker needs [wrangler.jsonc](mdc:apps/example-worker-echoback/wrangler.jso
 
 ```jsonc
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "worker-name",
-	"main": "src/index.ts",
-	"compatibility_date": "2025-04-28",
-	"compatibility_flags": ["nodejs_compat"],
-	"routes": [],
-	"logpush": true,
-	"observability": {
-		"enabled": true,
-	},
-	"vars": {
-		"ENVIRONMENT": "development", // overridden during deployment
-		"SENTRY_RELEASE": "unknown", // overridden during deployment
-	},
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "worker-name",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-04-28",
+  "compatibility_flags": ["nodejs_compat"],
+  "routes": [],
+  "logpush": true,
+  "observability": {
+    "enabled": true,
+  },
+  "vars": {
+    "ENVIRONMENT": "development", // overridden during deployment
+    "SENTRY_RELEASE": "unknown", // overridden during deployment
+  },
 }
 ```
 
@@ -115,11 +115,11 @@ pnpm turbo deploy
 
 ```json
 {
-	"deploy": {
-		"cache": false,
-		"dependsOn": ["build", "topo"],
-		"env": ["CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_API_TOKEN"]
-	}
+  "deploy": {
+    "cache": false,
+    "dependsOn": ["build", "topo"],
+    "env": ["CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_API_TOKEN"]
+  }
 }
 ```
 

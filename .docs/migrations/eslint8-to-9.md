@@ -82,28 +82,28 @@ import { includeIgnoreFile } from '@eslint/compat'
 import type { FlatConfig } from '@eslint/compat'
 
 export function getDirname(importMetaUrl: string) {
-	const __filename = fileURLToPath(importMetaUrl)
-	return path.dirname(__filename)
+  const __filename = fileURLToPath(importMetaUrl)
+  return path.dirname(__filename)
 }
 
 export function getGitIgnoreFiles(importMetaUrl: string) {
-	// always include the root gitignore file
-	const rootGitignorePath = fileURLToPath(new URL('../../../.gitignore', import.meta.url))
+  // always include the root gitignore file
+  const rootGitignorePath = fileURLToPath(new URL('../../../.gitignore', import.meta.url))
 
-	const ignoreFiles: FlatConfig[] = [includeIgnoreFile(rootGitignorePath)]
+  const ignoreFiles: FlatConfig[] = [includeIgnoreFile(rootGitignorePath)]
 
-	const packageDir = getDirname(importMetaUrl)
-	const packageGitignorePath = path.join(packageDir, '.gitignore')
-	if (existsSync(packageGitignorePath)) {
-		ignoreFiles.push(includeIgnoreFile(packageGitignorePath))
-	}
+  const packageDir = getDirname(importMetaUrl)
+  const packageGitignorePath = path.join(packageDir, '.gitignore')
+  if (existsSync(packageGitignorePath)) {
+    ignoreFiles.push(includeIgnoreFile(packageGitignorePath))
+  }
 
-	return ignoreFiles
+  return ignoreFiles
 }
 
 export function getTsconfigRootDir(importMetaUrl: string) {
-	const tsconfigRootDir = getDirname(importMetaUrl)
-	return existsSync(path.join(tsconfigRootDir, 'tsconfig.json')) ? tsconfigRootDir : undefined
+  const tsconfigRootDir = getDirname(importMetaUrl)
+  return existsSync(path.join(tsconfigRootDir, 'tsconfig.json')) ? tsconfigRootDir : undefined
 }
 ```
 
@@ -127,127 +127,127 @@ import { getDirname, getGitIgnoreFiles, getTsconfigRootDir } from './helpers'
 export { defineConfig }
 
 const compat = new FlatCompat({
-	// This helps FlatCompat resolve plugins relative to this config file
-	baseDirectory: getDirname(import.meta.url),
+  // This helps FlatCompat resolve plugins relative to this config file
+  baseDirectory: getDirname(import.meta.url),
 })
 
 export function getConfig(importMetaUrl: string) {
-	return defineConfig([
-		// Global ignores
-		{
-			ignores: [
-				'.*.{js,cjs}',
-				'**/*.{js,cjs}',
-				'**/node_modules/**',
-				'**/dist/**',
-				'eslint.config.ts',
-				'**/eslint.config.ts',
-				'**/worker-configuration.d.ts',
-			],
-		},
+  return defineConfig([
+    // Global ignores
+    {
+      ignores: [
+        '.*.{js,cjs}',
+        '**/*.{js,cjs}',
+        '**/node_modules/**',
+        '**/dist/**',
+        'eslint.config.ts',
+        '**/eslint.config.ts',
+        '**/worker-configuration.d.ts',
+      ],
+    },
 
-		...getGitIgnoreFiles(importMetaUrl),
+    ...getGitIgnoreFiles(importMetaUrl),
 
-		eslint.configs.recommended,
-		tseslint.configs.recommended,
-		importPlugin.flatConfigs?.recommended,
-		...turboConfig,
+    eslint.configs.recommended,
+    tseslint.configs.recommended,
+    importPlugin.flatConfigs?.recommended,
+    ...turboConfig,
 
-		// TypeScript Configuration
-		{
-			files: ['**/*.{ts,tsx,mts}'],
-			languageOptions: {
-				parser: tsEslintParser,
-				parserOptions: {
-					ecmaFeatures: {
-						jsx: true,
-					},
-					sourceType: 'module',
-					project: true,
-					tsconfigRootDir: getTsconfigRootDir(importMetaUrl),
-				},
-			},
-			plugins: {
-				'unused-imports': unusedImportsPlugin,
-			},
-			settings: {
-				'import/resolver': {
-					typescript: {
-						project: './tsconfig.json',
-					},
-				},
-				'import/parsers': {
-					'@typescript-eslint/parser': ['.ts', '.tsx', '*.mts'],
-				},
-			},
-			rules: {
-				...tsEslintPlugin.configs.recommended.rules,
-				...importPlugin.configs?.typescript.rules,
+    // TypeScript Configuration
+    {
+      files: ['**/*.{ts,tsx,mts}'],
+      languageOptions: {
+        parser: tsEslintParser,
+        parserOptions: {
+          ecmaFeatures: {
+            jsx: true,
+          },
+          sourceType: 'module',
+          project: true,
+          tsconfigRootDir: getTsconfigRootDir(importMetaUrl),
+        },
+      },
+      plugins: {
+        'unused-imports': unusedImportsPlugin,
+      },
+      settings: {
+        'import/resolver': {
+          typescript: {
+            project: './tsconfig.json',
+          },
+        },
+        'import/parsers': {
+          '@typescript-eslint/parser': ['.ts', '.tsx', '*.mts'],
+        },
+      },
+      rules: {
+        ...tsEslintPlugin.configs.recommended.rules,
+        ...importPlugin.configs?.typescript.rules,
 
-				'@typescript-eslint/consistent-type-imports': ['warn', { prefer: 'type-imports' }],
-				'@typescript-eslint/explicit-function-return-type': 'off',
-				'@typescript-eslint/ban-ts-comment': 'off',
-				'@typescript-eslint/no-floating-promises': 'warn',
-				'unused-imports/no-unused-imports': 'warn',
-				'@typescript-eslint/array-type': ['warn', { default: 'array-simple' }],
-				// Note: you must disable the base rule as it can report incorrect errors
-				'no-unused-vars': 'off',
-				'@typescript-eslint/no-unused-vars': [
-					'warn',
-					{
-						argsIgnorePattern: '^_',
-						varsIgnorePattern: '^_',
-					},
-				],
-				'@typescript-eslint/no-empty-object-type': 'off',
-				'@typescript-eslint/no-explicit-any': 'off',
-				'import/no-named-as-default': 'off',
-				'import/no-named-as-default-member': 'off',
-				'prefer-const': 'warn',
-				'no-mixed-spaces-and-tabs': ['error', 'smart-tabs'],
-				'no-empty': 'warn',
+        '@typescript-eslint/consistent-type-imports': ['warn', { prefer: 'type-imports' }],
+        '@typescript-eslint/explicit-function-return-type': 'off',
+        '@typescript-eslint/ban-ts-comment': 'off',
+        '@typescript-eslint/no-floating-promises': 'warn',
+        'unused-imports/no-unused-imports': 'warn',
+        '@typescript-eslint/array-type': ['warn', { default: 'array-simple' }],
+        // Note: you must disable the base rule as it can report incorrect errors
+        'no-unused-vars': 'off',
+        '@typescript-eslint/no-unused-vars': [
+          'warn',
+          {
+            argsIgnorePattern: '^_',
+            varsIgnorePattern: '^_',
+          },
+        ],
+        '@typescript-eslint/no-empty-object-type': 'off',
+        '@typescript-eslint/no-explicit-any': 'off',
+        'import/no-named-as-default': 'off',
+        'import/no-named-as-default-member': 'off',
+        'prefer-const': 'warn',
+        'no-mixed-spaces-and-tabs': ['error', 'smart-tabs'],
+        'no-empty': 'warn',
 
-				// Add Prettier last to override other formatting rules
-				...eslintConfigPrettier.rules,
-			},
-		},
+        // Add Prettier last to override other formatting rules
+        ...eslintConfigPrettier.rules,
+      },
+    },
 
-		// Import plugin's TypeScript specific rules using FlatCompat
-		...compat.extends('plugin:import/typescript').map((config) => ({
-			...config,
-			files: ['**/*.{ts,tsx,mjs}'],
-		})),
+    // Import plugin's TypeScript specific rules using FlatCompat
+    ...compat.extends('plugin:import/typescript').map((config) => ({
+      ...config,
+      files: ['**/*.{ts,tsx,mjs}'],
+    })),
 
-		{
-			files: ['**/*.spec.ts', '**/*.test.ts', '**/test/**/*.ts', '**/mocks.ts'],
-			rules: {
-				// this is having issues with @cloudflare/vitest-pool-workers types
-				'import/no-unresolved': 'off',
-			},
-		},
-		{
-			files: ['**/*.ts'],
-			rules: {
-				// ignoring fully for now due to issues
-				'import/no-unresolved': 'off',
-			},
-		},
-		{
-			files: ['tailwind.config.ts', 'postcss.config.mjs'],
-			rules: {
-				'@typescript-eslint/no-require-imports': 'off',
-			},
-		},
-		{
-			files: ['**/test/fixtures/**/*'],
-			rules: {
-				'import/no-unresolved': 'off',
-			},
-		},
+    {
+      files: ['**/*.spec.ts', '**/*.test.ts', '**/test/**/*.ts', '**/mocks.ts'],
+      rules: {
+        // this is having issues with @cloudflare/vitest-pool-workers types
+        'import/no-unresolved': 'off',
+      },
+    },
+    {
+      files: ['**/*.ts'],
+      rules: {
+        // ignoring fully for now due to issues
+        'import/no-unresolved': 'off',
+      },
+    },
+    {
+      files: ['tailwind.config.ts', 'postcss.config.mjs'],
+      rules: {
+        '@typescript-eslint/no-require-imports': 'off',
+      },
+    },
+    {
+      files: ['**/test/fixtures/**/*'],
+      rules: {
+        'import/no-unresolved': 'off',
+      },
+    },
 
-		// Prettier (should be last to override other formatting rules)
-		{ rules: eslintConfigPrettier.rules },
-	])
+    // Prettier (should be last to override other formatting rules)
+    { rules: eslintConfigPrettier.rules },
+  ])
 }
 ```
 
@@ -264,38 +264,38 @@ import { defineConfig, getConfig } from './default.config'
 import { getTsconfigRootDir } from './helpers'
 
 export function getReactConfig(importMetaUrl: string) {
-	return defineConfig([
-		...getConfig(importMetaUrl),
-		{
-			files: ['**/*.{js,jsx,mjs,cjs,ts,tsx}'],
-			plugins: {
-				react,
-				'unused-imports': unusedImportsPlugin,
-			},
-			languageOptions: {
-				parser: tsEslintParser,
-				parserOptions: {
-					ecmaFeatures: {
-						jsx: true,
-					},
-					sourceType: 'module',
-					project: true,
-					tsconfigRootDir: getTsconfigRootDir(importMetaUrl),
-				},
-			},
-		},
-		reactHooks.configs['recommended-latest'],
-		{
-			rules: {
-				// this commonly causes false positives with Hono middleware
-				// that have a similar naming scheme (e.g. useSentry())
-				'react-hooks/rules-of-hooks': 'off',
-			},
-		},
+  return defineConfig([
+    ...getConfig(importMetaUrl),
+    {
+      files: ['**/*.{js,jsx,mjs,cjs,ts,tsx}'],
+      plugins: {
+        react,
+        'unused-imports': unusedImportsPlugin,
+      },
+      languageOptions: {
+        parser: tsEslintParser,
+        parserOptions: {
+          ecmaFeatures: {
+            jsx: true,
+          },
+          sourceType: 'module',
+          project: true,
+          tsconfigRootDir: getTsconfigRootDir(importMetaUrl),
+        },
+      },
+    },
+    reactHooks.configs['recommended-latest'],
+    {
+      rules: {
+        // this commonly causes false positives with Hono middleware
+        // that have a similar naming scheme (e.g. useSentry())
+        'react-hooks/rules-of-hooks': 'off',
+      },
+    },
 
-		// Prettier (should be last to override other formatting rules)
-		{ rules: eslintConfigPrettier.rules },
-	])
+    // Prettier (should be last to override other formatting rules)
+    { rules: eslintConfigPrettier.rules },
+  ])
 }
 ```
 
@@ -315,9 +315,9 @@ export default defineConfig([...config])
 
 ```json
 {
-	"extends": "@repo/typescript-config/lib.json",
-	"include": ["*.ts", "src/**/*.ts"],
-	"exclude": ["node_modules/"]
+  "extends": "@repo/typescript-config/lib.json",
+  "include": ["*.ts", "src/**/*.ts"],
+  "exclude": ["node_modules/"]
 }
 ```
 
@@ -335,28 +335,28 @@ Add `"${configDir}/eslint.config.ts"` to the exclude array:
 
 ```json
 {
-	"$schema": "https://json.schemastore.org/tsconfig",
-	"display": "Default",
-	"include": ["${configDir}/**/*.ts", "${configDir}/**/*.tsx"],
-	"exclude": ["${configDir}/node_modules/", "${configDir}/dist/", "${configDir}/eslint.config.ts"],
-	"compilerOptions": {
-		"composite": false,
-		"declaration": true,
-		"declarationMap": true,
-		"esModuleInterop": true,
-		"forceConsistentCasingInFileNames": true,
-		"inlineSources": false,
-		"isolatedModules": true,
-		"moduleResolution": "bundler",
-		"noUnusedLocals": false,
-		"noUnusedParameters": false,
-		"preserveWatchOutput": true,
-		"skipLibCheck": true,
-		"noImplicitOverride": true,
-		"strict": true,
-		"noEmit": true,
-		"resolveJsonModule": true
-	}
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Default",
+  "include": ["${configDir}/**/*.ts", "${configDir}/**/*.tsx"],
+  "exclude": ["${configDir}/node_modules/", "${configDir}/dist/", "${configDir}/eslint.config.ts"],
+  "compilerOptions": {
+    "composite": false,
+    "declaration": true,
+    "declarationMap": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "inlineSources": false,
+    "isolatedModules": true,
+    "moduleResolution": "bundler",
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "preserveWatchOutput": true,
+    "skipLibCheck": true,
+    "noImplicitOverride": true,
+    "strict": true,
+    "noEmit": true,
+    "resolveJsonModule": true
+  }
 }
 ```
 
@@ -366,33 +366,33 @@ Add `"${configDir}/eslint.config.ts"` to the exclude array:
 
 ```json
 {
-	"$schema": "https://json.schemastore.org/tsconfig",
-	"include": [
-		"${configDir}/worker-configuration.d.ts",
-		"${configDir}/env.d.ts",
-		"${configDir}/**/*.ts",
-		"${configDir}/**/*.tsx"
-	],
-	"exclude": ["${configDir}/node_modules/", "${configDir}/dist/", "${configDir}/eslint.config.ts"],
-	"compilerOptions": {
-		"target": "es2022",
-		"lib": ["es2022"],
-		"jsx": "react",
-		"module": "es2022",
-		"moduleResolution": "bundler",
-		"types": ["./worker-configuration.d.ts", "@cloudflare/vitest-pool-workers"],
-		"resolveJsonModule": true,
-		"allowJs": true,
-		"checkJs": false,
-		"noEmit": true,
-		"isolatedModules": true,
-		"allowSyntheticDefaultImports": true,
-		"forceConsistentCasingInFileNames": true,
-		"strict": true,
-		"skipLibCheck": true,
-		"esModuleInterop": true,
-		"moduleDetection": "force"
-	}
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "include": [
+    "${configDir}/worker-configuration.d.ts",
+    "${configDir}/env.d.ts",
+    "${configDir}/**/*.ts",
+    "${configDir}/**/*.tsx"
+  ],
+  "exclude": ["${configDir}/node_modules/", "${configDir}/dist/", "${configDir}/eslint.config.ts"],
+  "compilerOptions": {
+    "target": "es2022",
+    "lib": ["es2022"],
+    "jsx": "react",
+    "module": "es2022",
+    "moduleResolution": "bundler",
+    "types": ["./worker-configuration.d.ts", "@cloudflare/vitest-pool-workers"],
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "isolatedModules": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "moduleDetection": "force"
+  }
 }
 ```
 
@@ -402,13 +402,13 @@ Add `"${configDir}/eslint.config.ts"` to the exclude array:
 
 ```json
 {
-	"$schema": "https://json.schemastore.org/tsconfig",
-	"extends": "@repo/typescript-config/workers.json",
-	"include": ["${configDir}/**/*.ts", "${configDir}/**/*.tsx"],
-	"exclude": ["${configDir}/node_modules/", "${configDir}/dist/", "${configDir}/eslint.config.ts"],
-	"compilerOptions": {
-		"types": ["@cloudflare/workers-types", "@cloudflare/vitest-pool-workers"]
-	}
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "@repo/typescript-config/workers.json",
+  "include": ["${configDir}/**/*.ts", "${configDir}/**/*.tsx"],
+  "exclude": ["${configDir}/node_modules/", "${configDir}/dist/", "${configDir}/eslint.config.ts"],
+  "compilerOptions": {
+    "types": ["@cloudflare/workers-types", "@cloudflare/vitest-pool-workers"]
+  }
 }
 ```
 
@@ -434,10 +434,10 @@ Update lint scripts:
 
 ```json
 {
-	"scripts": {
-		"check:lint:all": "run-eslint",
-		"fix:lint": "FIX_ESLINT=1 run-eslint"
-	}
+  "scripts": {
+    "check:lint:all": "run-eslint",
+    "fix:lint": "FIX_ESLINT=1 run-eslint"
+  }
 }
 ```
 
@@ -498,11 +498,11 @@ Update the lint check to use the new command:
 
 ```typescript
 const checks = {
-	deps: ['pnpm', 'check:deps'],
-	// eslint can be run from anywhere and it'll automatically only lint the current dir and children
-	lint: ['run-eslint'],
-	types: ['turbo', turboFlags, 'check:types'].flat(),
-	format: ['pnpm', 'check:format'],
+  deps: ['pnpm', 'check:deps'],
+  // eslint can be run from anywhere and it'll automatically only lint the current dir and children
+  lint: ['run-eslint'],
+  types: ['turbo', turboFlags, 'check:types'].flat(),
+  format: ['pnpm', 'check:format'],
 } as const satisfies { [key: string]: string[] }
 ```
 
@@ -634,9 +634,9 @@ Update `.vscode/settings.json`:
 
 ```json
 {
-	"eslint.options": {
-		"flags": ["unstable_config_lookup_from_file"]
-	}
+  "eslint.options": {
+    "flags": ["unstable_config_lookup_from_file"]
+  }
 }
 ```
 
@@ -644,9 +644,9 @@ Update `.vscode/settings.json`:
 
 ```json
 {
-	"explorer.fileNesting.patterns": {
-		"package.json": "eslint.config.ts, turbo.jsonc, CLAUDE.md, AGENT.md, ...(other patterns)"
-	}
+  "explorer.fileNesting.patterns": {
+    "package.json": "eslint.config.ts, turbo.jsonc, CLAUDE.md, AGENT.md, ...(other patterns)"
+  }
 }
 ```
 

@@ -99,12 +99,12 @@ Most packages reference scripts from [packages/tools/](mdc:packages/tools):
 
 ```json
 {
-	"scripts": {
-		"build": "run-build-package",
-		"check": "run-check-package",
-		"dev": "run-dev-worker",
-		"deploy": "run-deploy-worker"
-	}
+  "scripts": {
+    "build": "run-build-package",
+    "check": "run-check-package",
+    "dev": "run-dev-worker",
+    "deploy": "run-deploy-worker"
+  }
 }
 ```
 
@@ -160,11 +160,11 @@ export type { SomeType } from './types'
 
 ```json
 {
-	"extends": "@repo/typescript-config/base.json",
-	"compilerOptions": {
-		"outDir": "dist"
-	},
-	"include": ["src/**/*"]
+  "extends": "@repo/typescript-config/base.json",
+  "compilerOptions": {
+    "outDir": "dist"
+  },
+  "include": ["src/**/*"]
 }
 ```
 
@@ -176,7 +176,7 @@ When extending TypeScript configs, always use the full package name instead of r
 
 ```json
 {
-	"extends": "@repo/typescript-config/base.json"
+  "extends": "@repo/typescript-config/base.json"
 }
 ```
 
@@ -184,7 +184,7 @@ When extending TypeScript configs, always use the full package name instead of r
 
 ```json
 {
-	"extends": "./base.json"
+  "extends": "./base.json"
 }
 ```
 
@@ -198,9 +198,9 @@ When extending TypeScript configs, always use the full package name instead of r
 
 ```json
 {
-	"build": {
-		"dependsOn": ["^build", "topo"]
-	}
+  "build": {
+    "dependsOn": ["^build", "topo"]
+  }
 }
 ```
 
@@ -211,10 +211,10 @@ When extending TypeScript configs, always use the full package name instead of r
 
 ```json
 {
-	"dependencies": {
-		"@repo/hono-helpers": "workspace:*",
-		"@repo/typescript-config": "workspace:*"
-	}
+  "dependencies": {
+    "@repo/hono-helpers": "workspace:*",
+    "@repo/typescript-config": "workspace:*"
+  }
 }
 ```
 

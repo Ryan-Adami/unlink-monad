@@ -59,34 +59,34 @@ import { describe, expect, it } from 'vitest'
 import worker from '../../index'
 
 describe('Worker Integration Tests', () => {
-	it('handles GET request', async () => {
-		const request = new Request('http://example.com/', {
-			method: 'GET',
-		})
-		const ctx = createExecutionContext()
+  it('handles GET request', async () => {
+    const request = new Request('http://example.com/', {
+      method: 'GET',
+    })
+    const ctx = createExecutionContext()
 
-		const response = await worker.fetch(request, env, ctx)
-		await waitOnExecutionContext(ctx)
+    const response = await worker.fetch(request, env, ctx)
+    await waitOnExecutionContext(ctx)
 
-		expect(response.status).toBe(200)
-		expect(await response.text()).toBe('Hello World!')
-	})
+    expect(response.status).toBe(200)
+    expect(await response.text()).toBe('Hello World!')
+  })
 
-	it('handles POST request with JSON', async () => {
-		const request = new Request('http://example.com/api', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ message: 'test' }),
-		})
-		const ctx = createExecutionContext()
+  it('handles POST request with JSON', async () => {
+    const request = new Request('http://example.com/api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'test' }),
+    })
+    const ctx = createExecutionContext()
 
-		const response = await worker.fetch(request, env, ctx)
-		await waitOnExecutionContext(ctx)
+    const response = await worker.fetch(request, env, ctx)
+    await waitOnExecutionContext(ctx)
 
-		expect(response.status).toBe(200)
-		const data = await response.json()
-		expect(data).toHaveProperty('message', 'test')
-	})
+    expect(response.status).toBe(200)
+    const data = await response.json()
+    expect(data).toHaveProperty('message', 'test')
+  })
 })
 ```
 
@@ -95,16 +95,16 @@ describe('Worker Integration Tests', () => {
 ```typescript
 // Mock environment variables
 describe('Worker with Environment', () => {
-	it('uses environment variables', async () => {
-		// env object is automatically populated from .dev.vars
-		expect(env.SOME_SECRET).toBeDefined()
+  it('uses environment variables', async () => {
+    // env object is automatically populated from .dev.vars
+    expect(env.SOME_SECRET).toBeDefined()
 
-		const request = new Request('http://example.com/config')
-		const ctx = createExecutionContext()
-		const response = await worker.fetch(request, env, ctx)
+    const request = new Request('http://example.com/config')
+    const ctx = createExecutionContext()
+    const response = await worker.fetch(request, env, ctx)
 
-		expect(response.status).toBe(200)
-	})
+    expect(response.status).toBe(200)
+  })
 })
 ```
 
@@ -120,28 +120,28 @@ import { describe, expect, it } from 'vitest'
 import { cors, logger } from '../middleware'
 
 describe('Middleware Tests', () => {
-	it('applies CORS headers', async () => {
-		const app = new Hono()
-		app.use('*', cors())
-		app.get('/', (c) => c.text('OK'))
+  it('applies CORS headers', async () => {
+    const app = new Hono()
+    app.use('*', cors())
+    app.get('/', (c) => c.text('OK'))
 
-		const request = new Request('http://localhost/')
-		const response = await app.request(request)
+    const request = new Request('http://localhost/')
+    const response = await app.request(request)
 
-		expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*')
-	})
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*')
+  })
 
-	it('logs requests', async () => {
-		const app = new Hono()
-		app.use('*', logger())
-		app.get('/', (c) => c.text('OK'))
+  it('logs requests', async () => {
+    const app = new Hono()
+    app.use('*', logger())
+    app.get('/', (c) => c.text('OK'))
 
-		const request = new Request('http://localhost/')
-		const response = await app.request(request)
+    const request = new Request('http://localhost/')
+    const response = await app.request(request)
 
-		expect(response.status).toBe(200)
-		// Logger middleware should not affect response
-	})
+    expect(response.status).toBe(200)
+    // Logger middleware should not affect response
+  })
 })
 ```
 
@@ -154,14 +154,14 @@ import { describe, expectTypeOf, it } from 'vitest'
 import type { SomeFunction, SomeType } from '../types'
 
 describe('Type Tests', () => {
-	it('has correct type signature', () => {
-		expectTypeOf<SomeFunction>().toEqualTypeOf<(input: string) => number>()
-	})
+  it('has correct type signature', () => {
+    expectTypeOf<SomeFunction>().toEqualTypeOf<(input: string) => number>()
+  })
 
-	it('exports expected types', () => {
-		expectTypeOf<SomeType>().toHaveProperty('id')
-		expectTypeOf<SomeType>().toHaveProperty('name')
-	})
+  it('exports expected types', () => {
+    expectTypeOf<SomeType>().toHaveProperty('id')
+    expectTypeOf<SomeType>().toHaveProperty('name')
+  })
 })
 ```
 
@@ -211,10 +211,10 @@ pnpm turbo test:ci
 import { defineWorkspace } from 'vitest/config'
 
 export default defineWorkspace([
-	// Worker applications
-	'apps/*/vitest.config.{ts,js}',
-	// Shared packages
-	'packages/*/vitest.config.{ts,js}',
+  // Worker applications
+  'apps/*/vitest.config.{ts,js}',
+  // Shared packages
+  'packages/*/vitest.config.{ts,js}',
 ])
 ```
 
@@ -225,19 +225,19 @@ export default defineWorkspace([
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
-	test: {
-		environment: 'node',
-		pool: '@cloudflare/vitest-pool-workers',
-		poolOptions: {
-			workers: {
-				wrangler: { configPath: './wrangler.jsonc' },
-				miniflare: {
-					// Miniflare options
-					compatibilityDate: '2024-01-01',
-				},
-			},
-		},
-	},
+  test: {
+    environment: 'node',
+    pool: '@cloudflare/vitest-pool-workers',
+    poolOptions: {
+      workers: {
+        wrangler: { configPath: './wrangler.jsonc' },
+        miniflare: {
+          // Miniflare options
+          compatibilityDate: '2024-01-01',
+        },
+      },
+    },
+  },
 })
 ```
 
@@ -248,10 +248,10 @@ export default defineConfig({
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
-	test: {
-		environment: 'node',
-		globals: true,
-	},
+  test: {
+    environment: 'node',
+    globals: true,
+  },
 })
 ```
 
@@ -303,8 +303,8 @@ DEBUG=* pnpm test
 ```typescript
 // Mock fetch for external API calls
 global.fetch = vi.fn().mockResolvedValue({
-	ok: true,
-	json: () => Promise.resolve({ data: 'mocked' }),
+  ok: true,
+  json: () => Promise.resolve({ data: 'mocked' }),
 })
 ```
 
@@ -312,13 +312,13 @@ global.fetch = vi.fn().mockResolvedValue({
 
 ```typescript
 it('handles errors gracefully', async () => {
-	const request = new Request('http://example.com/error')
-	const ctx = createExecutionContext()
+  const request = new Request('http://example.com/error')
+  const ctx = createExecutionContext()
 
-	const response = await worker.fetch(request, env, ctx)
+  const response = await worker.fetch(request, env, ctx)
 
-	expect(response.status).toBe(500)
-	expect(await response.text()).toContain('Error')
+  expect(response.status).toBe(500)
+  expect(await response.text()).toContain('Error')
 })
 ```
 
@@ -326,9 +326,9 @@ it('handles errors gracefully', async () => {
 
 ```typescript
 it('uses KV storage', async () => {
-	// env.TEST_KV is available from wrangler.jsonc bindings
-	await env.TEST_KV.put('key', 'value')
-	const value = await env.TEST_KV.get('key')
-	expect(value).toBe('value')
+  // env.TEST_KV is available from wrangler.jsonc bindings
+  await env.TEST_KV.put('key', 'value')
+  const value = await env.TEST_KV.get('key')
+  expect(value).toBe('value')
 })
 ```
