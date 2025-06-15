@@ -17,12 +17,11 @@ This guide covers the continuous integration, deployment, and release processes 
 **Pipeline**:
 
 1. Install dependencies with pnpm
-2. Run CI checks (`pnpm check:ci`)
+2. Run CI checks/tests (`pnpm turbo check:ci`)
    - Dependency version checks
    - Code formatting validation
    - TypeScript type checking
    - ESLint linting
-3. Run tests (`pnpm test:ci`)
    - Unit tests across all packages
    - Integration tests for workers
 

@@ -111,7 +111,7 @@ This repository includes GitHub Actions workflows defined in the `.github/workfl
 
   - Triggered on pushes to any branch _except_ `main`.
   - Installs dependencies.
-  - Runs checks (`pnpm check:ci`) and tests (`pnpm test:ci`)
+  - Runs checks/tests (`pnpm turbo check:ci`)
 
 - **`release.yml` (Release Workflow):**
 

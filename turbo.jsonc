@@ -48,6 +48,19 @@
 			"dependsOn": ["check:types", "check:lint", "topo"],
 			"outputLogs": "new-only"
 		},
+		"//#test:ci": {
+			"dependsOn": [
+				"build"
+				// Packages that need to be built before running tests can be added here.
+				// Example:
+				// "@repo/test-helpers#build"
+			],
+			"outputLogs": "new-only"
+		},
+		"test:ci": {
+			"dependsOn": ["build", "topo"],
+			"outputLogs": "new-only"
+		},
 		"check:ci": {
 			"dependsOn": [
 				"//#check:format",
@@ -83,6 +96,10 @@
 		},
 		"fix:workers-types": {
 			"outputs": ["worker-configuration.d.ts", "topo"],
+			"outputLogs": "new-only"
+		},
+		"//#build": {
+			"dependsOn": ["^build"],
 			"outputLogs": "new-only"
 		}
 	}
