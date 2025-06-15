@@ -7,7 +7,8 @@ cd "$repo_root"
 syncpack update
 
 # Run fix if there are any changes
-git status --porcelain | grep 'package.json' &&
-	syncpack fix-mismatches &&
-	runx fix --format &&
-	pnpm install --child-concurrency=10 || true
+if git status --porcelain | grep 'package.json'; then
+	syncpack fix-mismatches
+	runx fix --format
+	pnpm install --child-concurrency=10
+fi

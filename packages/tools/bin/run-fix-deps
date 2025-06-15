@@ -7,5 +7,6 @@ cd "$repo_root"
 syncpack fix-mismatches
 
 # Update lockfile if there were any changes to package.json files
-git status --porcelain | grep -q 'package.json' &&
-	pnpm install --child-concurrency=10 || true
+if git status --porcelain | grep -q 'package.json'; then
+	pnpm install --child-concurrency=10
+fi
