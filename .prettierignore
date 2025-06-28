@@ -8,3 +8,8 @@ vite.config.ts.timestamp*
 worker-configuration.d.ts
 **/dist/**
 .claude/*.json
+.windsurf/rules/
+.cursor/rules/
+CLAUDE.md
+AGENT.md
+AGENTS.md
