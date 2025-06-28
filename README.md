@@ -108,13 +108,11 @@ You can also run most commands directly using `pnpm` and `turbo` if you prefer (
 This repository includes GitHub Actions workflows defined in the `.github/workflows` directory:
 
 - **`branches.yml` (Branches Workflow):**
-
   - Triggered on pushes to any branch _except_ `main`.
   - Installs dependencies.
   - Runs checks/tests (`pnpm turbo check:ci`)
 
 - **`release.yml` (Release Workflow):**
-
   - Triggered on pushes to the `main` branch.
   - Contains two jobs:
     - `test-and-deploy`: Installs dependencies, runs checks, tests, and then deploys all workers (`pnpm turbo deploy`). This step requires the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets to be configured in your repository's GitHub secrets.
