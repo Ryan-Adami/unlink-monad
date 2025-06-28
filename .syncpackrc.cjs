@@ -12,12 +12,7 @@ const config = {
 			pinVersion: 'workspace:*',
 		},
 		{
-			label: 'pin typescript for eslint',
-			dependencies: ['typescript'],
-			pinVersion: '5.5.4',
-		},
-		{
-			label: `pin eslint and all it's plugins for eslint v8`,
+			label: `ensure eslint versions are consistent`,
 			dependencies: [
 				'eslint',
 				'@types/eslint',
