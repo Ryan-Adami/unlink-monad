@@ -11,20 +11,6 @@ const config = {
 			dependencyTypes: ['!local'], // Exclude the local package itself
 			pinVersion: 'workspace:*',
 		},
-		{
-			label: `ensure eslint versions are consistent`,
-			dependencies: [
-				'eslint',
-				'@types/eslint',
-				'eslint-config-prettier',
-				'eslint-plugin-react-hooks',
-				'eslint-plugin-unused-imports',
-				'@typescript-eslint/eslint-plugin',
-				'@typescript-eslint/parser',
-			],
-			// snapTo removes it from syncpack update list, which is the main goal
-			snapTo: ['@repo/eslint-config'],
-		},
 	],
 	semverGroups: [
 		{
