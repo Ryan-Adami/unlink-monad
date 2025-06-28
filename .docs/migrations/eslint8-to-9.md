@@ -150,7 +150,9 @@ export function getConfig(importMetaUrl: string) {
 
     eslint.configs.recommended,
     tseslint.configs.recommended,
-    importPlugin.flatConfigs?.recommended,
+    // Added `any` here because there are type issues.
+    // It still seems to work...
+    importPlugin.flatConfigs?.recommended as any,
     ...turboConfig,
 
     // TypeScript Configuration
@@ -462,7 +464,7 @@ args=(
 	--cache-strategy content
 	--cache-location "$cache_location"
 	--max-warnings 1000
-	--flag unstable_config_lookup_from_file
+	--flag v10_config_lookup_from_file
 	.
 )
 
@@ -635,7 +637,7 @@ Update `.vscode/settings.json`:
 ```json
 {
   "eslint.options": {
-    "flags": ["unstable_config_lookup_from_file"]
+    "flags": ["v10_config_lookup_from_file"]
   }
 }
 ```

@@ -4,8 +4,7 @@ import tsEslintPlugin from '@typescript-eslint/eslint-plugin'
 import tsEslintParser from '@typescript-eslint/parser'
 import eslintConfigPrettier from 'eslint-config-prettier'
 import turboConfig from 'eslint-config-turbo/flat'
-// @ts-ignore eslint-plugin-import has no types
-import * as importPlugin from 'eslint-plugin-import'
+import importPlugin from 'eslint-plugin-import'
 import unusedImportsPlugin from 'eslint-plugin-unused-imports'
 import { defineConfig } from 'eslint/config'
 import tseslint from 'typescript-eslint'
@@ -38,7 +37,9 @@ export function getConfig(importMetaUrl: string) {
 
 		eslint.configs.recommended,
 		tseslint.configs.recommended,
-		importPlugin.flatConfigs?.recommended,
+		// Added `any` here because there are type issues.
+		// It still seems to work...
+		importPlugin.flatConfigs?.recommended as any,
 		...turboConfig,
 
 		// TypeScript Configuration
