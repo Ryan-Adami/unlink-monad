@@ -131,7 +131,6 @@ export default function generator(plop: PlopTypes.NodePlopAPI): void {
 			},
 		],
 		actions: (data: unknown) => {
-			NewPackageAnswers.parse(data)
 			const answers = NewPackageAnswers.parse(data)
 			process.chdir(answers.turbo.paths.root)
 			const destination = `packages/${slugifyText(answers.name)}`
