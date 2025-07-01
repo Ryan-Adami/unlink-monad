@@ -56,15 +56,9 @@ export default function generator(plop: PlopTypes.NodePlopAPI): void {
 					],
 					data: answers,
 				},
-				{
-					type: 'pnpmInstall',
-					data: { ...answers, destination } satisfies PnpmInstallData,
-				},
+				{ type: 'pnpmInstall', data: { ...answers, destination } satisfies PnpmInstallData },
 				{ type: 'fixAll' },
-				{
-					type: 'pnpmInstall',
-					data: { ...answers, destination } satisfies PnpmInstallData,
-				},
+				{ type: 'pnpmInstall', data: { ...answers, destination } satisfies PnpmInstallData },
 			]
 
 			return actions
@@ -99,15 +93,9 @@ export default function generator(plop: PlopTypes.NodePlopAPI): void {
 					],
 					data: answers,
 				},
-				{
-					type: 'pnpmInstall',
-					data: { ...answers, destination } satisfies PnpmInstallData,
-				},
+				{ type: 'pnpmInstall', data: { ...answers, destination } satisfies PnpmInstallData },
 				{ type: 'fixAll' },
-				{
-					type: 'pnpmInstall',
-					data: { ...answers, destination } satisfies PnpmInstallData,
-				},
+				{ type: 'pnpmInstall', data: { ...answers, destination } satisfies PnpmInstallData },
 			]
 
 			return actions
@@ -147,10 +135,7 @@ export default function generator(plop: PlopTypes.NodePlopAPI): void {
 					},
 				},
 				{ type: 'fixDepsAndFormat' },
-				{
-					type: 'pnpmInstall',
-					data: { ...answers, destination } satisfies PnpmInstallData,
-				},
+				{ type: 'pnpmInstall', data: { ...answers, destination } satisfies PnpmInstallData },
 			]
 
 			return actions
