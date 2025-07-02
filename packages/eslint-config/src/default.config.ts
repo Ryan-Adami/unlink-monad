@@ -62,7 +62,7 @@ export function getConfig(importMetaUrl: string) {
 			settings: {
 				'import/resolver': {
 					typescript: {
-						project: './tsconfig.json',
+						project: `${getTsconfigRootDir(importMetaUrl) || '.'}/tsconfig.json`,
 					},
 				},
 				'import/parsers': {
@@ -115,10 +115,23 @@ export function getConfig(importMetaUrl: string) {
 			},
 		},
 		{
-			files: ['**/*.ts'],
+			files: ['**/*.{ts,tsx}'],
 			rules: {
-				// ignoring fully for now due to issues
-				'import/no-unresolved': 'off',
+				'import/no-unresolved': [
+					'error',
+					{
+						ignore: [
+							// Cloudflare Workers runtime modules
+							'^cloudflare:',
+							// Virtual modules from build tools
+							'^virtual:',
+							// Astro content collections
+							'^astro:',
+							// Node.js built-in modules with node: prefix
+							'^node:',
+						],
+					},
+				],
 			},
 		},
 		{
