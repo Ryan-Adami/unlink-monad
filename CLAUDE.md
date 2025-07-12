@@ -1,115 +1,68 @@
-# CLAUDE.md
+<cloudflare-workers-monorepo>
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+<title>Cloudflare Workers Monorepo Guidelines for Claude Code</title>
 
-## Common Development Commands
+<commands>
+- `just install` - Install dependencies
+- `just dev` - Run development servers for all workers
+- `just test` - Run all tests
+- `just build` - Build all workers
+- `just check` - Check code quality (lint, types, format)
+- `just fix` - Fix code issues automatically
+- `just deploy` - Deploy all workers (requires CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID)
+- `just new-worker` - Create a new Cloudflare Worker
+- `just new-package` - Create a new shared package
+- `just update-deps` - Update dependencies across the monorepo
+- `just cs` - Create a changeset for versioning
+- `pnpm turbo -F worker-name dev` - Start specific worker
+- `pnpm turbo -F worker-name test` - Test specific worker
+- `pnpm turbo -F worker-name deploy` - Deploy specific worker
+- `pnpm vitest path/to/test.test.ts` - Run a single test file
+- `pnpm -F @repo/package-name add dependency` - Add dependency to specific package
+</commands>
 
-### Essential Commands
+<architecture>
+- Cloudflare Workers monorepo using pnpm workspaces and Turborepo
+- `apps/` - Individual Cloudflare Worker applications
+- `packages/` - Shared libraries and configurations
+  - `@repo/eslint-config` - Shared ESLint configuration
+  - `@repo/typescript-config` - Shared TypeScript configuration
+  - `@repo/hono-helpers` - Hono framework utilities
+  - `@repo/tools` - Development tools and scripts
+- Worker apps delegate scripts to `@repo/tools` for consistency
+- Hono web framework with helpers in `@repo/hono-helpers`
+- Vitest with `@cloudflare/vitest-pool-workers` for testing
+- Syncpack ensures dependency version consistency
+- Turborepo enables parallel task execution and caching
+- Workers configured via `wrangler.jsonc` with environment variables
+- Each worker has `context.ts` for typed environment bindings
+- Integration tests in `src/test/integration/`
+- Workers use `nodejs_compat` compatibility flag
+- GitHub Actions deploy automatically on merge to main
+- Changesets manage versions and changelogs
+</architecture>
 
-```bash
-# Install dependencies
-just install
-# or
-pnpm install --child-concurrency=10
+<code-style>
+- Use tabs for indentation, spaces for alignment
+- Type imports use `import type`
+- Workspace imports use `@repo/` prefix
+- Import order: Built-ins → Third-party → `@repo/` → Relative
+- Prefix unused variables with `_`
+- Prefer `const` over `let`
+- Use `array-simple` notation
+- Explicit function return types are optional
+</code-style>
 
-# Run development servers for all workers
-just dev
-# or
-pnpm run dev
+<critical-notes>
+- TypeScript configs MUST use fully qualified paths: `@repo/typescript-config/base.json` not `./base.json`
+- Do NOT add 'WebWorker' to TypeScript config - types are in worker-configuration.d.ts or @cloudflare/workers-types
+- For lint checking: First `cd` to the package directory, then run `pnpm turbo check:types check:lint`
+- Use `workspace:*` protocol for internal dependencies
+- Use `pnpm turbo -F` for build/test/deploy tasks
+- Use `pnpm -F` for dependency management
+- NEVER create files unless absolutely necessary
+- ALWAYS prefer editing existing files over creating new ones
+- NEVER proactively create documentation files unless explicitly requested
+</critical-notes>
 
-# Run tests
-just test
-# or
-pnpm vitest
-
-# Run a single test file
-pnpm vitest path/to/test.test.ts
-
-# Build all workers
-just build
-# or
-pnpm turbo build
-
-# Check code quality (lint, types, format)
-just check
-# or
-pnpm runx check
-
-# Fix code issues automatically
-just fix
-# or
-pnpm runx fix
-
-# Deploy all workers (requires CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID)
-just deploy
-# or
-pnpm turbo deploy
-```
-
-### Creating New Components
-
-```bash
-# Create a new Cloudflare Worker
-just new-worker
-
-# Create a new shared package
-just new-package
-```
-
-### Dependency Management
-
-```bash
-# Update dependencies across the monorepo
-just update-deps
-
-# Create a changeset for versioning
-just cs
-```
-
-## High-Level Architecture
-
-This is a **Cloudflare Workers monorepo** using pnpm workspaces and Turborepo for orchestration. The architecture enables multiple Workers to share code and tooling while maintaining independent deployment capabilities.
-
-### Key Architectural Decisions
-
-1. **Script Centralization**: All package.json scripts in worker apps delegate to commands in `@repo/tools` (e.g., `run-wrangler-dev`, `run-eslint`). This ensures consistency across workers and simplifies maintenance.
-
-2. **Shared Configuration**: TypeScript, ESLint, and other tool configurations are centralized in the `packages/` directory and referenced by workers, avoiding duplication. When TypeScript configs in `@packages/typescript-config/` extend other configs, they must use fully qualified paths (e.g., `@repo/typescript-config/base.json`) instead of relative paths (e.g., `./base.json`) to prevent resolution issues.
-
-3. **Hono Framework**: Workers use Hono as the web framework, with shared middleware and helpers in `@repo/hono-helpers` for common patterns like error handling, logging, and CORS.
-
-4. **Testing Strategy**: Vitest with the Cloudflare Workers test pool (`@cloudflare/vitest-pool-workers`) enables testing Workers in an environment that closely matches production.
-
-5. **Dependency Synchronization**: Syncpack ensures all shared dependencies use the same version across the monorepo, with pinned versions for predictable builds.
-
-6. **Task Orchestration**: Turborepo defines task dependencies in `turbo.json`, enabling parallel execution where possible and caching for improved performance.
-
-### Worker Development Patterns
-
-- Workers are configured via `wrangler.jsonc` with environment variables like `ENVIRONMENT` and `SENTRY_RELEASE` that are overridden during deployment
-- Each worker has a `context.ts` file that provides typed access to environment bindings
-- Integration tests are placed in `src/test/integration/` and test actual HTTP endpoints
-- Workers use the `nodejs_compat` compatibility flag for broader Node.js API support
-
-### Deployment Flow
-
-1. GitHub Actions run on push to branches (tests only) and main (tests + deploy)
-2. The release workflow uses Changesets to manage versions and changelogs
-3. Deployment happens automatically on merge to main, not from PR branches
-4. Each worker can be deployed independently using its `deploy` script
-
-## Code Style Guidelines
-
-- **Tabs**: Use tabs for indentation, spaces for alignment
-- **Imports**: Type imports use `import type`, workspace imports via `@repo/`
-- **Import order**: Built-ins → Third-party → `@repo/` → Relative (enforced by Prettier)
-- **Variables**: Prefix unused with `_`, prefer `const` over `let`
-- **Types**: Use `array-simple` notation, explicit function return types optional
-
-## Important Notes & Memories
-
-- **TypeScript Configs**: When extending configs, always use fully qualified paths (e.g., `@repo/typescript-config/base.json`) instead of relative paths (e.g., `./base.json`)
-- **Worker Types**: Don't add 'WebWorker' to TypeScript config for Workers - these types are already included in worker-configuration.d.ts or @cloudflare/workers-types
-- **Lint Checking**: First `cd` to the package directory containing the file you're working on, then run: `pnpm turbo check:types check:lint`
-- **Dependencies**: Use `workspace:*` protocol for internal dependencies
-- **Commands**: Use `pnpm turbo -F` for build/test/deploy tasks, `pnpm -F` for dependency management
+</cloudflare-workers-monorepo>
