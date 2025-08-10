@@ -4,22 +4,11 @@
 	"private": true,
 	"sideEffects": false,
 	"scripts": {
-		"build:workspace": "turbo -F @repo/workspace-dependencies build",
-		"changeset:new": "run-changeset-new",
-		"check": "runx check",
-		"check:deps": "syncpack lint",
-		"check:format": "prettier . --check --cache",
+		"check:deps": "runx check --deps",
+		"check:format": "runx check --format",
 		"check:lint:all": "run-eslint",
-		"check:turbo": "turbo check",
-		"fix": "runx fix",
-		"fix:deps": "run-fix-deps",
-		"fix:format": "prettier . --write --cache",
-		"fix:lint": "FIX_ESLINT=1 run-eslint",
-		"fix:workers-types": "turbo fix:workers-types",
-		"new-worker": "run-turbo-gen",
 		"test": "vitest",
-		"test:ci": "run-vitest-ci",
-		"update-deps": "run-update-deps"
+		"test:ci": "run-vitest-ci"
 	},
 	"devDependencies": {
 		"@changesets/cli": "2.29.5",
@@ -31,11 +20,12 @@
 		"@turbo/gen": "2.5.4",
 		"npm-run-all2": "8.0.4",
 		"prettier": "3.6.2",
-		"prettier-plugin-packagejson": "2.5.17",
+		"prettier-plugin-packagejson": "2.5.19",
+		"prettier-plugin-toml": "2.0.6",
 		"syncpack": "13.0.4",
 		"turbo": "2.5.4",
 		"typescript": "5.8.2",
 		"vitest": "3.2.4"
 	},
-	"packageManager": "pnpm@10.10.0"
+	"packageManager": "pnpm@10.14.0"
 }

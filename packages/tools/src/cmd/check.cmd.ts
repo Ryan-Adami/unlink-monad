@@ -22,6 +22,7 @@ export const checkCmd = new Command('check')
 		if (root) {
 			cd(repoRoot)
 		}
+
 		// Run all if none are selected
 		if (!deps && !lint && !types && !format) {
 			deps = true
@@ -44,11 +45,11 @@ export const checkCmd = new Command('check')
 		}
 
 		const checks = {
-			deps: ['pnpm', 'check:deps'],
+			deps: ['syncpack', 'lint'],
 			// eslint can be run from anywhere and it'll automatically only lint the current dir and children
 			lint: ['run-eslint'],
 			types: ['turbo', turboFlags, 'check:types'].flat(),
-			format: ['pnpm', 'check:format'],
+			format: ['prettier', '.', '--cache', '--check'],
 		} as const satisfies { [key: string]: string[] }
 
 		type TableRow = [string, string, string, string]
@@ -74,16 +75,15 @@ export const checkCmd = new Command('check')
 		}
 
 		if (deps) {
-			await within(async () => {
-				cd(repoRoot) // Must be run from root
-				const exitCode = await $`${checks.deps}`.exitCode
-				table.push([
-					'deps',
-					checks.deps.join(' '),
-					getAndCheckOutcome(exitCode),
-					'Root',
-				] satisfies TableRow)
-			})
+			const exitCode = await $({
+				cwd: repoRoot, // Must be run from root
+			})`${checks.deps}`.exitCode
+			table.push([
+				'deps',
+				checks.deps.join(' '),
+				getAndCheckOutcome(exitCode),
+				'Root',
+			] satisfies TableRow)
 		}
 
 		if (lint) {
@@ -107,16 +107,15 @@ export const checkCmd = new Command('check')
 		}
 
 		if (format) {
-			await within(async () => {
-				cd(repoRoot) // Must be run from root
-				const exitCode = await $`${checks.format}`.exitCode
-				table.push([
-					'format',
-					checks.format.join(' '),
-					getAndCheckOutcome(exitCode),
-					'Root',
-				] satisfies TableRow)
-			})
+			const exitCode = await $({
+				cwd: repoRoot, // Must be run from root
+			})`${checks.format}`.exitCode
+			table.push([
+				'format',
+				checks.format.join(' '),
+				getAndCheckOutcome(exitCode),
+				'Root',
+			] satisfies TableRow)
 		}
 
 		echo(table.toString())

@@ -3,11 +3,13 @@ import 'zx/globals'
 import { program } from '@commander-js/extra-typings'
 import { catchProcessError } from '@jahands/cli-tools/proc'
 
-import { buildCmd } from '../cmd/build'
-import { checkCmd } from '../cmd/check'
-import { checkWorkersTypesCmd } from '../cmd/check-workers-types'
-import { devCmd } from '../cmd/dev'
-import { fixCmd } from '../cmd/fix'
+import { buildCmd } from '../cmd/build.cmd'
+import { checkWorkersTypesCmd } from '../cmd/check-workers-types.cmd'
+import { checkCmd } from '../cmd/check.cmd'
+import { ciCmd } from '../cmd/ci.cmd'
+import { devCmd } from '../cmd/dev.cmd'
+import { fixCmd } from '../cmd/fix.cmd'
+import { updateCmd } from '../cmd/update.cmd'
 
 program
 	.name('runx')
@@ -21,6 +23,8 @@ program
 	.addCommand(buildCmd)
 	.addCommand(checkCmd)
 	.addCommand(devCmd)
+	.addCommand(ciCmd)
+	.addCommand(updateCmd)
 
 	// Don't hang for unresolved promises
 	.hook('postAction', () => process.exit(0))

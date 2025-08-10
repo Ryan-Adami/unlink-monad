@@ -20,21 +20,17 @@ This guide covers the common development workflows and commands for working with
 ```bash
 # Install all dependencies
 just install
-# or
-pnpm install
 ```
 
 ### Development Commands
 
-All commands can be run using either the [Justfile](mdc:Justfile) shortcuts or direct pnpm/turbo commands:
+All primary commands should be run through [Justfile](mdc:Justfile):
 
 #### Start Development
 
 ```bash
 # Start dev servers for all workers
 just dev
-# or
-pnpm run dev
 ```
 
 #### Create New Worker
@@ -57,18 +53,12 @@ just new-package
 ```bash
 # Build all projects
 just build
-# or
-pnpm turbo build
 
 # Run tests
 just test
-# or
-pnpm test
 
 # Run CI checks (linting, types, formatting)
 just check
-# or
-pnpm run check
 ```
 
 #### Code Quality
@@ -76,8 +66,6 @@ pnpm run check
 ```bash
 # Auto-fix issues
 just fix
-# or
-pnpm run fix
 
 # Check code formatting
 pnpm run check:format
@@ -102,10 +90,10 @@ just deploy
 
 ```bash
 # Run command in specific workspace using turbo
-pnpm turbo -F @repo/package-name build
+bun turbo -F @repo/package-name build
 
 # Run command in all worker apps
-pnpm turbo -F "./apps/*" dev
+bun turbo -F "./apps/*" dev
 
 # Add dependency to specific package (use pnpm for dependency management)
 pnpm -F @repo/package-name add dependency-name
@@ -115,13 +103,13 @@ pnpm -F @repo/package-name add dependency-name
 
 ```bash
 # Build with dependency graph
-pnpm turbo build
+bun turbo build
 
 # Run checks across all packages
-pnpm turbo check
+bun turbo check
 
 # Clear turbo cache
-pnpm turbo clean
+bun turbo clean
 ```
 
 ## Key Files to Know
@@ -143,7 +131,7 @@ Always use `pnpm` instead of `npm` or `yarn` to maintain workspace consistency.
 
 ## Command Guidelines
 
-- **Use `pnpm turbo -F <package>`** for build, test, and deploy tasks
+- **Use `bun turbo -F <package>`** for build, test, and deploy tasks
 - **Use `pnpm -F <package>`** for dependency management (add/remove packages)
 - **Use `just <command>`** for common development tasks (shortcuts to turbo commands)
 
@@ -161,5 +149,5 @@ Always use `pnpm` instead of `npm` or `yarn` to maintain workspace consistency.
 
 - **TypeScript Configs**: When extending configs, always use fully qualified paths (e.g., `@repo/typescript-config/base.json`) instead of relative paths
 - **Worker Types**: Don't add 'WebWorker' to TypeScript config for Workers - these types are included in worker-configuration.d.ts or @cloudflare/workers-types
-- **Lint Checking**: First `cd` to the package directory, then run: `pnpm turbo check:types check:lint`
+- **Lint Checking**: First `cd` to the package directory, then run: `bun turbo check:types check:lint`
 - **Dependencies**: Use `workspace:*` protocol for internal dependencies
