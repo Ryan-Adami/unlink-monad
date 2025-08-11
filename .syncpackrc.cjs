@@ -18,6 +18,9 @@ const config = {
 			range: '',
 			dependencies: ['**'],
 			packages: ['**'],
+			// url is not supported so we need to exclude it
+			// to allow using deps from pkg.pr.new
+			specifierTypes: ['!url'],
 		},
 	],
 }
