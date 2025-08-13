@@ -33,14 +33,14 @@ export function getConfig(importMetaUrl: string) {
 			],
 		},
 
-		...getGitIgnoreFiles(importMetaUrl),
+		getGitIgnoreFiles(importMetaUrl),
 
 		eslint.configs.recommended,
 		tseslint.configs.recommended,
 		// Added `any` here because there are type issues.
 		// It still seems to work...
 		importPlugin.flatConfigs?.recommended as any,
-		...turboConfig,
+		turboConfig,
 
 		// TypeScript Configuration
 		{
@@ -102,7 +102,7 @@ export function getConfig(importMetaUrl: string) {
 		},
 
 		// Import plugin's TypeScript specific rules using FlatCompat
-		...compat.extends('plugin:import/typescript').map((config) => ({
+		compat.extends('plugin:import/typescript').map((config) => ({
 			...config,
 			files: ['**/*.{ts,tsx,mjs}'],
 		})),

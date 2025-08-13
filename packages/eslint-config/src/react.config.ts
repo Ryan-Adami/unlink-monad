@@ -9,7 +9,7 @@ import { getTsconfigRootDir } from './helpers'
 
 export function getReactConfig(importMetaUrl: string) {
 	return defineConfig([
-		...getConfig(importMetaUrl),
+		getConfig(importMetaUrl),
 		{
 			files: ['**/*.{js,jsx,mjs,cjs,ts,tsx}'],
 			plugins: {
