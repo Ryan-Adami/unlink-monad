@@ -42,7 +42,7 @@ export const fixCmd = new Command('fix')
 			deps: ['run-fix-deps'],
 			lint: ['FIX_ESLINT=1', 'turbo', turboFlags, 'check:lint'].flat(),
 			workersTypes: ['turbo', turboFlags, 'fix:workers-types'].flat(),
-			format: ['prettier', '.', '--cache', '--write'],
+			format: ['prettier', '.', '--cache', '--write', '--log-level=warn'],
 			formatShell: ['runx', 'shfmt', 'fix', '--skip-if-unavailable'],
 		} as const satisfies { [key: string]: string[] }
 
@@ -114,17 +114,11 @@ export const fixCmd = new Command('fix')
 
 			const [prettierProc, shfmtProc] = await Promise.all([
 				$({
-					stdio: 'pipe',
 					cwd: repoRoot, // Must be run from root
 				})`${fixes.format}`,
 
 				$({
-					stdio: 'inherit',
 					cwd: repoRoot, // Must be run from root
-					env: {
-						FORCE_COLOR: '1',
-						...process.env,
-					},
 				})`${fixes.formatShell}`,
 			])
 

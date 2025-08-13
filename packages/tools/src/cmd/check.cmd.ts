@@ -52,7 +52,7 @@ export const checkCmd = new Command('check')
 			// eslint can be run from anywhere and it'll automatically only lint the current dir and children
 			lint: ['run-eslint'],
 			types: ['turbo', turboFlags, 'check:types'].flat(),
-			format: ['prettier', '.', '--cache', '--check'],
+			format: ['prettier', '.', '--cache', '--check', '--log-level=warn'],
 			formatShell: ['runx', 'shfmt', 'check', '--skip-if-unavailable'],
 		} as const satisfies { [key: string]: string[] }
 
@@ -121,17 +121,11 @@ export const checkCmd = new Command('check')
 
 			const [prettierProc, shfmtProc] = await Promise.all([
 				$({
-					stdio: 'pipe',
 					cwd: repoRoot, // Must be run from root
 				})`${checks.format}`,
 
 				$({
-					stdio: 'inherit',
 					cwd: repoRoot, // Must be run from root
-					env: {
-						FORCE_COLOR: '1',
-						...process.env,
-					},
 				})`${checks.formatShell}`,
 			])
 
