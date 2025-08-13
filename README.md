@@ -26,7 +26,9 @@ npm create workers-monorepo@latest
 - node.js v22 or later
 - pnpm v10 or later
 - bun 1.2 or later
-- mise (optional, but recommended for tool management)
+- rg (ripgrep) - optional, but recommended for shell formatting
+- shfmt - optional, but recommended for shell formatting
+- mise - optional, but recommended for tool management
 
 ## Getting Started
 
