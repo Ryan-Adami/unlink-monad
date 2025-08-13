@@ -2,7 +2,7 @@ import { Command } from '@commander-js/extra-typings'
 import Table from 'cli-table3'
 
 import { getRepoRoot } from '../path'
-import { getOutcome } from '../proc'
+import { getOutcome, SHFMT_SKIPPED_EXIT_CODE } from '../proc'
 
 export const fixCmd = new Command('fix')
 	.description('Fix deps/lint/format issues. If no options are provided, all fixes are run.')
@@ -43,6 +43,7 @@ export const fixCmd = new Command('fix')
 			lint: ['FIX_ESLINT=1', 'turbo', turboFlags, 'check:lint'].flat(),
 			workersTypes: ['turbo', turboFlags, 'fix:workers-types'].flat(),
 			format: ['prettier', '.', '--cache', '--write'],
+			formatShell: ['runx', 'shfmt', 'fix', '--skip-if-unavailable'],
 		} as const satisfies { [key: string]: string[] }
 
 		type TableRow = [string, string, string, string]
@@ -60,11 +61,18 @@ export const fixCmd = new Command('fix')
 		$.nothrow = true
 
 		let didErr = false
-		function getAndCheckOutcome(exitCode: number | null): string {
-			if (exitCode !== 0) {
+
+		function getAndCheckOutcome({
+			exitCode,
+			skippedCode,
+		}: {
+			exitCode: number | null
+			skippedCode?: number
+		}): string {
+			if (exitCode !== 0 && exitCode !== skippedCode) {
 				didErr = true
 			}
-			return getOutcome(exitCode)
+			return getOutcome({ exitCode, skippedCode })
 		}
 
 		if (deps) {
@@ -74,7 +82,7 @@ export const fixCmd = new Command('fix')
 			table.push([
 				'deps',
 				fixes.deps.join(' '),
-				getAndCheckOutcome(exitCode),
+				getAndCheckOutcome({ exitCode }),
 				'Root',
 			] satisfies TableRow)
 		}
@@ -84,7 +92,7 @@ export const fixCmd = new Command('fix')
 			table.push([
 				'lint',
 				fixes.lint.join(' '),
-				getAndCheckOutcome(exitCode),
+				getAndCheckOutcome({ exitCode }),
 				runFromRoot ? 'Root' : `cwd (${cwdName})`,
 			] satisfies TableRow)
 		}
@@ -96,21 +104,47 @@ export const fixCmd = new Command('fix')
 			table.push([
 				'workers types',
 				fixes.workersTypes.join(' '),
-				getAndCheckOutcome(exitCode),
+				getAndCheckOutcome({ exitCode }),
 				runFromRoot ? 'Root' : `cwd (${cwdName})`,
 			] satisfies TableRow)
 		}
 
 		if (format) {
-			const exitCode = await $({
-				cwd: repoRoot, // Must be run from root
-			})`${fixes.format}`.exitCode
-			table.push([
-				'format',
-				fixes.format.join(' '),
-				getAndCheckOutcome(exitCode),
-				'Root',
-			] satisfies TableRow)
+			echo(chalk.dim('formatting with prettier (and shfmt if available)...'))
+
+			const [prettierProc, shfmtProc] = await Promise.all([
+				$({
+					stdio: 'pipe',
+					cwd: repoRoot, // Must be run from root
+				})`${fixes.format}`,
+
+				$({
+					stdio: 'pipe',
+					cwd: repoRoot, // Must be run from root
+					env: {
+						FORCE_COLOR: '1',
+						...process.env,
+					},
+				})`${fixes.formatShell}`.pipe(process.stdout),
+			])
+
+			table.push(
+				[
+					'format',
+					fixes.format.join(' '),
+					getAndCheckOutcome({ exitCode: prettierProc.exitCode }),
+					'Root',
+				] satisfies TableRow,
+				[
+					'format shell',
+					fixes.formatShell.join(' '),
+					getAndCheckOutcome({
+						exitCode: shfmtProc.exitCode,
+						skippedCode: SHFMT_SKIPPED_EXIT_CODE,
+					}),
+					'Root',
+				] satisfies TableRow
+			)
 		}
 
 		echo(table.toString())

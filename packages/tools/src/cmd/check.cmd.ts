@@ -2,7 +2,7 @@ import { Command } from '@commander-js/extra-typings'
 import Table from 'cli-table3'
 
 import { getRepoRoot } from '../path'
-import { getOutcome } from '../proc'
+import { getOutcome, SHFMT_SKIPPED_EXIT_CODE } from '../proc'
 
 export const checkCmd = new Command('check')
 	.description(
@@ -13,7 +13,10 @@ export const checkCmd = new Command('check')
 	.option('-d, --deps', 'Check for dependency issues with Syncpack')
 	.option('-l, --lint', 'Check for eslint issues')
 	.option('-t, --types', 'Check for TypeScript issues')
-	.option('-f, --format', 'Check for formatting issues with prettier')
+	.option(
+		'-f, --format',
+		'Check for formatting issues with prettier. Also checks shell scripts if shfmt and rg (ripgrep) are available'
+	)
 
 	.option('--continue', 'Use --continue when executing turbo commands', false)
 
@@ -50,6 +53,7 @@ export const checkCmd = new Command('check')
 			lint: ['run-eslint'],
 			types: ['turbo', turboFlags, 'check:types'].flat(),
 			format: ['prettier', '.', '--cache', '--check'],
+			formatShell: ['runx', 'shfmt', 'check', '--skip-if-unavailable'],
 		} as const satisfies { [key: string]: string[] }
 
 		type TableRow = [string, string, string, string]
@@ -67,11 +71,17 @@ export const checkCmd = new Command('check')
 		$.nothrow = true
 
 		let didErr = false
-		function getAndCheckOutcome(exitCode: number | null): string {
-			if (exitCode !== 0) {
+		function getAndCheckOutcome({
+			exitCode,
+			skippedCode,
+		}: {
+			exitCode: number | null
+			skippedCode?: number
+		}): string {
+			if (exitCode !== 0 && exitCode !== skippedCode) {
 				didErr = true
 			}
-			return getOutcome(exitCode)
+			return getOutcome({ exitCode, skippedCode })
 		}
 
 		if (deps) {
@@ -81,7 +91,7 @@ export const checkCmd = new Command('check')
 			table.push([
 				'deps',
 				checks.deps.join(' '),
-				getAndCheckOutcome(exitCode),
+				getAndCheckOutcome({ exitCode }),
 				'Root',
 			] satisfies TableRow)
 		}
@@ -91,7 +101,7 @@ export const checkCmd = new Command('check')
 			table.push([
 				'lint',
 				checks.lint.join(' '),
-				getAndCheckOutcome(exitCode),
+				getAndCheckOutcome({ exitCode }),
 				runFromRoot ? 'Root' : `cwd (${cwdName})`,
 			] satisfies TableRow)
 		}
@@ -101,21 +111,47 @@ export const checkCmd = new Command('check')
 			table.push([
 				'types',
 				checks.types.join(' '),
-				getAndCheckOutcome(exitCode),
+				getAndCheckOutcome({ exitCode }),
 				runFromRoot ? 'Root' : `cwd (${cwdName})`,
 			] satisfies TableRow)
 		}
 
 		if (format) {
-			const exitCode = await $({
-				cwd: repoRoot, // Must be run from root
-			})`${checks.format}`.exitCode
-			table.push([
-				'format',
-				checks.format.join(' '),
-				getAndCheckOutcome(exitCode),
-				'Root',
-			] satisfies TableRow)
+			echo(chalk.dim('checking formatting with prettier (and shfmt if available)...'))
+
+			const [prettierProc, shfmtProc] = await Promise.all([
+				$({
+					stdio: 'pipe',
+					cwd: repoRoot, // Must be run from root
+				})`${checks.format}`,
+
+				$({
+					stdio: 'pipe',
+					cwd: repoRoot, // Must be run from root
+					env: {
+						FORCE_COLOR: '1',
+						...process.env,
+					},
+				})`${checks.formatShell}`.pipe(process.stdout),
+			])
+
+			table.push(
+				[
+					'format',
+					checks.format.join(' '),
+					getAndCheckOutcome({ exitCode: prettierProc.exitCode }),
+					'Root',
+				] satisfies TableRow,
+				[
+					'format shell',
+					checks.formatShell.join(' '),
+					getAndCheckOutcome({
+						exitCode: shfmtProc.exitCode,
+						skippedCode: SHFMT_SKIPPED_EXIT_CODE,
+					}),
+					'Root',
+				] satisfies TableRow
+			)
 		}
 
 		echo(table.toString())

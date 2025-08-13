@@ -9,6 +9,7 @@ import { checkCmd } from '../cmd/check.cmd'
 import { ciCmd } from '../cmd/ci.cmd'
 import { devCmd } from '../cmd/dev.cmd'
 import { fixCmd } from '../cmd/fix.cmd'
+import { shfmtCmd } from '../cmd/shfmt.cmd'
 import { updateCmd } from '../cmd/update.cmd'
 
 program
@@ -25,6 +26,7 @@ program
 	.addCommand(devCmd)
 	.addCommand(ciCmd)
 	.addCommand(updateCmd)
+	.addCommand(shfmtCmd)
 
 	// Don't hang for unresolved promises
 	.hook('postAction', () => process.exit(0))
