@@ -59,7 +59,6 @@ const config = {
 		{
 			files: ['mise.toml', '.mise.toml'],
 			options: {
-				singleQuote: false,
 				alignEntries: true,
 			},
 		},
