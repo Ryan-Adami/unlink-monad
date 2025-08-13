@@ -11,3 +11,5 @@ chore: improve eslint configs
 - fix import plugin's TypeScript resolver file patterns
 - don't disable rules-of-hooks on tsx/jsx files
 - add clarifying comments for disabled rules
+
+resolves #17
