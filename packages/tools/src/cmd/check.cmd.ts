@@ -126,13 +126,13 @@ export const checkCmd = new Command('check')
 				})`${checks.format}`,
 
 				$({
-					stdio: 'pipe',
+					stdio: 'inherit',
 					cwd: repoRoot, // Must be run from root
 					env: {
 						FORCE_COLOR: '1',
 						...process.env,
 					},
-				})`${checks.formatShell}`.pipe(process.stdout),
+				})`${checks.formatShell}`,
 			])
 
 			table.push(

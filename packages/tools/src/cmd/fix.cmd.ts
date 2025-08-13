@@ -119,13 +119,13 @@ export const fixCmd = new Command('fix')
 				})`${fixes.format}`,
 
 				$({
-					stdio: 'pipe',
+					stdio: 'inherit',
 					cwd: repoRoot, // Must be run from root
 					env: {
 						FORCE_COLOR: '1',
 						...process.env,
 					},
-				})`${fixes.formatShell}`.pipe(process.stdout),
+				})`${fixes.formatShell}`,
 			])
 
 			table.push(
