@@ -36,7 +36,7 @@ const config = {
 		'prettier-plugin-toml',
 	],
 	importOrder: [...codeImports, ...typeImports],
-	importOrderTypeScriptVersion: '5.5.4',
+	importOrderTypeScriptVersion: '5.8.2',
 	overrides: [
 		{
 			files: ['*.jsonc', '*.code-workspace'],
