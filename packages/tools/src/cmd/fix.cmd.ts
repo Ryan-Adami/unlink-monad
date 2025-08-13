@@ -61,7 +61,6 @@ export const fixCmd = new Command('fix')
 		$.nothrow = true
 
 		let didErr = false
-
 		function getAndCheckOutcome({
 			exitCode,
 			skippedCode,
