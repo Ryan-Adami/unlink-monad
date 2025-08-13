@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 set -eu
 
 # Extract name and version from package.json using jq
@@ -7,7 +7,7 @@ VERSION=$(get-version)
 
 # Deploy with wrangler using the extracted values as binding variables
 echo "Deploying worker $NAME version $VERSION"
-wrangler deploy \
+exec wrangler deploy \
 	--var NAME:"$NAME" \
 	--var SENTRY_RELEASE:"$VERSION" \
 	"$@"

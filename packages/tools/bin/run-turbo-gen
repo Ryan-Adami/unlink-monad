@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 set -eu
 
 echo "Building workspace dependencies..."
@@ -9,4 +9,4 @@ if ! TURBO_OUTPUT=$(
 	echo "$TURBO_OUTPUT" >&2
 	exit 1
 fi
-turbo gen "$@"
+exec turbo gen "$@"

@@ -1,6 +1,6 @@
-#!/usr/bin/env sh
+#!/bin/sh
 set -eu
 
 script_path="$(realpath "$(dirname "$0")/../src/bin/runx.cmd.ts")"
 
-bun "$script_path" "$@"
+exec bun "$script_path" "$@"

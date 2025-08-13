@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 set -eu
 
 repo_root=$(git rev-parse --show-toplevel)
@@ -8,5 +8,5 @@ syncpack fix-mismatches
 
 # Update lockfile if there were any changes to package.json files
 if git status --porcelain | grep -q 'package.json'; then
-	pnpm install --child-concurrency=10
+	exec pnpm install --child-concurrency=10
 fi

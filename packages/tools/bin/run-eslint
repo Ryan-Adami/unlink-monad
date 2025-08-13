@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -euo pipefail
 
 # store cache under node_modules when available to reduce clutter
@@ -30,4 +30,4 @@ while [[ $# -gt 0 ]]; do
 	shift
 done
 
-bun --bun eslint "${args[@]}"
+exec bun --bun eslint "${args[@]}"

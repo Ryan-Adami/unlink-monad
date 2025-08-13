@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 set -eu
 
-wrangler types --include-env=false
+exec wrangler types --include-env=false
