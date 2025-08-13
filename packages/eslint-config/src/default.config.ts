@@ -5,11 +5,12 @@ import tsEslintParser from '@typescript-eslint/parser'
 import eslintConfigPrettier from 'eslint-config-prettier'
 import turboConfig from 'eslint-config-turbo/flat'
 import importPlugin from 'eslint-plugin-import'
-import unusedImportsPlugin from 'eslint-plugin-unused-imports'
 import { defineConfig } from 'eslint/config'
-import tseslint from 'typescript-eslint'
+import * as tseslint from 'typescript-eslint'
 
 import { getDirname, getGitIgnoreFiles, getTsconfigRootDir } from './helpers'
+
+import type { Linter } from 'eslint'
 
 export { defineConfig }
 
@@ -36,15 +37,14 @@ export function getConfig(importMetaUrl: string) {
 		getGitIgnoreFiles(importMetaUrl),
 
 		eslint.configs.recommended,
-		tseslint.configs.recommended,
-		// Added `any` here because there are type issues.
-		// It still seems to work...
-		importPlugin.flatConfigs?.recommended as any,
+		// casting as a workaround for https://github.com/typescript-eslint/typescript-eslint/issues/11444
+		tseslint.configs.recommended as Linter.Config<Linter.RulesRecord>,
+		importPlugin.flatConfigs.recommended,
 		turboConfig,
 
 		// TypeScript Configuration
 		{
-			files: ['**/*.{ts,tsx,mts}'],
+			files: ['**/*.{ts,tsx,mts,mjs}'],
 			languageOptions: {
 				parser: tsEslintParser,
 				parserOptions: {
@@ -52,12 +52,9 @@ export function getConfig(importMetaUrl: string) {
 						jsx: true,
 					},
 					sourceType: 'module',
-					project: true,
+					projectService: true,
 					tsconfigRootDir: getTsconfigRootDir(importMetaUrl),
 				},
-			},
-			plugins: {
-				'unused-imports': unusedImportsPlugin,
 			},
 			settings: {
 				'import/resolver': {
@@ -66,7 +63,7 @@ export function getConfig(importMetaUrl: string) {
 					},
 				},
 				'import/parsers': {
-					'@typescript-eslint/parser': ['.ts', '.tsx', '*.mts'],
+					'@typescript-eslint/parser': ['.ts', '.tsx', '.mts'],
 				},
 			},
 			rules: {
@@ -77,7 +74,6 @@ export function getConfig(importMetaUrl: string) {
 				'@typescript-eslint/explicit-function-return-type': 'off',
 				'@typescript-eslint/ban-ts-comment': 'off',
 				'@typescript-eslint/no-floating-promises': 'warn',
-				'unused-imports/no-unused-imports': 'warn',
 				'@typescript-eslint/array-type': ['warn', { default: 'array-simple' }],
 				// Note: you must disable the base rule as it can report incorrect errors
 				'no-unused-vars': 'off',
@@ -88,7 +84,9 @@ export function getConfig(importMetaUrl: string) {
 						varsIgnorePattern: '^_',
 					},
 				],
+				// disabling because it was annoying with cloudflare:test types
 				'@typescript-eslint/no-empty-object-type': 'off',
+
 				'@typescript-eslint/no-explicit-any': 'off',
 				'import/no-named-as-default': 'off',
 				'import/no-named-as-default-member': 'off',
@@ -102,9 +100,11 @@ export function getConfig(importMetaUrl: string) {
 		},
 
 		// Import plugin's TypeScript specific rules using FlatCompat
+		// This should apply to the same files as the TypeScript configuration above.
+		// We apply it as a separate configuration object to ensure `files` matches.
 		compat.extends('plugin:import/typescript').map((config) => ({
 			...config,
-			files: ['**/*.{ts,tsx,mjs}'],
+			files: ['**/*.{ts,tsx,mts,mjs}'], // Ensure it targets the same TypeScript files
 		})),
 
 		{
