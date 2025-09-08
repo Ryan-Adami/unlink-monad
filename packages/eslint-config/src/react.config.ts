@@ -6,7 +6,9 @@ import * as reactHooks from 'eslint-plugin-react-hooks'
 import { defineConfig, getConfig } from './default.config'
 import { getTsconfigRootDir } from './helpers'
 
-export function getReactConfig(importMetaUrl: string) {
+import type { Linter } from 'eslint'
+
+export function getReactConfig(importMetaUrl: string): Array<Linter.Config<Linter.RulesRecord>> {
 	return defineConfig([
 		getConfig(importMetaUrl),
 		{

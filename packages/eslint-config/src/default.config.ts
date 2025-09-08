@@ -19,7 +19,7 @@ const compat = new FlatCompat({
 	baseDirectory: getDirname(import.meta.url),
 })
 
-export function getConfig(importMetaUrl: string) {
+export function getConfig(importMetaUrl: string): Array<Linter.Config<Linter.RulesRecord>> {
 	return defineConfig([
 		// Global ignores
 		{
