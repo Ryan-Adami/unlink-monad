@@ -37,8 +37,7 @@ export function getConfig(importMetaUrl: string): Array<Linter.Config<Linter.Rul
 		getGitIgnoreFiles(importMetaUrl),
 
 		eslint.configs.recommended,
-		// casting as a workaround for https://github.com/typescript-eslint/typescript-eslint/issues/11444
-		tseslint.configs.recommended as Linter.Config<Linter.RulesRecord>,
+		tseslint.configs.recommended,
 		importPlugin.flatConfigs.recommended,
 		turboConfig,
 
