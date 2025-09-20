@@ -39,7 +39,7 @@ shfmtCmd
 type Mode = 'write' | 'diff'
 
 async function runShfmt(mode: Mode) {
-	await $`rg --files-with-matches '^#!.*\\b(sh|bash|zsh|fish|dash|ksh|csh)\\b' .`.pipe(
+	await $`rg --files-with-matches '^#!.*\\b(sh|bash|zsh|fish|dash|ksh|csh)\\b' -g '!*.*' -g '*.sh' .`.pipe(
 		$`xargs shfmt --case-indent ${`--${mode}`}`
 	)
 }
