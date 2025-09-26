@@ -5,7 +5,7 @@ import type { APIError } from '../helpers/errors'
 import type { HonoApp } from '../types'
 
 /** Handles typical notFound hooks */
-export function useNotFound<T extends HonoApp>() {
+export function withNotFound<T extends HonoApp>() {
 	return async (ctx: Context<T>): Promise<Response> => {
 		const c = ctx as unknown as Context<HonoApp>
 

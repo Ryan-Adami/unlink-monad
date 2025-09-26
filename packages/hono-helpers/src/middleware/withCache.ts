@@ -5,7 +5,7 @@ import type { StatusCode } from 'hono/utils/http-status'
 import type { HonoApp } from '../types'
 
 /** Caches status: 200 responses for given ttl */
-export function useCache<T extends HonoApp>(ttl: number) {
+export function withCache<T extends HonoApp>(ttl: number) {
 	return async (ctx: Context<T>, next: Next): Promise<Response | void> => {
 		const c = ctx as unknown as Context<HonoApp>
 
@@ -26,7 +26,7 @@ export function useCache<T extends HonoApp>(ttl: number) {
 }
 
 /** Caches using default CF Cache behavior */
-export function useCacheDefault<T extends HonoApp>(ttl: number) {
+export function withCacheDefault<T extends HonoApp>(ttl: number) {
 	return async (ctx: Context<T>, next: Next): Promise<Response | void> => {
 		const c = ctx as unknown as Context<HonoApp>
 
@@ -48,13 +48,13 @@ interface CacheByStatus {
 	ttl: number
 }
 
-interface useCacheByStatusOptions {
+interface WithCacheByStatusOptions {
 	rules: CacheByStatus[]
 	/** Force caching rather than using default CF cache behavior */
 	force: boolean
 }
 /** Caches responses based on status */
-export function useCacheByStatus<T extends HonoApp>(options: useCacheByStatusOptions) {
+export function withCacheByStatus<T extends HonoApp>(options: WithCacheByStatusOptions) {
 	return async (ctx: Context<T>, next: Next): Promise<Response | void> => {
 		const c = ctx as unknown as Context<HonoApp>
 

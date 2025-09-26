@@ -2,7 +2,7 @@ import { env } from 'cloudflare:workers'
 import { Hono } from 'hono'
 import { useWorkersLogger } from 'workers-tagged-logger'
 
-import { getRequestLogData, logger, useNotFound, useOnError } from '@repo/hono-helpers'
+import { getRequestLogData, logger, withNotFound, withOnError } from '@repo/hono-helpers'
 
 import type { App } from './context'
 
@@ -17,8 +17,8 @@ const app = new Hono<App>()
 			})(c, next)
 	)
 
-	.onError(useOnError())
-	.notFound(useNotFound())
+	.onError(withOnError())
+	.notFound(withNotFound())
 
 	.all('*', async (c) => {
 		const url = new URL(c.req.url)

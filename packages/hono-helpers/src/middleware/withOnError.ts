@@ -9,7 +9,7 @@ import type { APIError } from '../helpers/errors'
 import type { HonoApp } from '../types'
 
 /** Handles typical onError hooks */
-export function useOnError<T extends HonoApp>() {
+export function withOnError<T extends HonoApp>() {
 	return async (err: Error, ctx: Context<T>): Promise<Response> => {
 		const c = ctx as unknown as Context<HonoApp>
 

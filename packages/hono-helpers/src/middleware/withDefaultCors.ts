@@ -1,7 +1,7 @@
 import { cors } from 'hono/cors'
 
 /** Default CORS handler */
-export function useDefaultCors() {
+export function withDefaultCors() {
 	return cors({
 		origin: '*',
 		allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
