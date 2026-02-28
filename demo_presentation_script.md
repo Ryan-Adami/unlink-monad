@@ -1,210 +1,207 @@
 # Demo Presentation Script
 
-This is the clean judge-facing flow for the hackathon demo.
-
 Use the terminal UI here:
 - Local: `http://localhost:8787/demo/terminal`
 - Hosted: `https://pusd-demo-worker.riasols.workers.dev/demo/terminal`
 
-## Demo Order
+This version is built around a plain-English buyer story:
+- create a new bank-linked buyer
+- let the buyer ask an AI shopping agent for help
+- convert cash into private dollars only when the buyer confirms
+- pay a machine checkout with x402
+- cash out the leftover private balance
 
-1. Show the terminal UI landing screen
-2. Explain the stack in one sentence
-3. Run the guided demo
-4. Pause after each major step and call out the proof
-5. Close with the x402 machine-payment moment
+## Recommended Live Order
 
-This order is deliberate:
-- first establish credibility
-- then prove the fiat rail
-- then prove private custody
-- then prove redemption
-- then prove autonomous payment
+1. Open the terminal UI
+2. Paste the admin token
+3. Leave the buyer name as a fresh value
+4. Leave the shopping prompt as-is or type a new one
+5. Click `Run Full Buyer Demo`
 
-## What The UI Should Show
+That one button runs the full story in the right order.
 
-The UI is designed to be a single-screen command center:
-- terminal-style event log on the right
-- simple action buttons on the left
-- a single `Run Guided Demo` button for the smoothest presentation
-- no complex navigation
+If you want to drive it manually, use this order:
+1. `Reset Everything (Fresh Demo Start)`
+2. `Clear Live Event Stream` (optional, if you want a visually clean pane without resetting state)
+3. `1. Show Live System Info`
+4. `2. Create Buyer + Add Starter Cash`
+5. `3. Ask AI Shopping Agent`
+6. `4. Check Cash + Private USD`
+7. `5. Confirm Purchase + Pay Privately`
+8. `6. Cash Out Leftover Private USD`
 
-What to enter before starting:
-1. Paste the admin token
-2. Leave the user as `judge-demo`, or set a fresh demo user
-3. Click `Run Guided Demo`
+The numbered buttons are the best mode when you want to pause after each step and explain the proof in the log.
 
-## Judge Script
-
-Use this almost verbatim if you want a tight 2-3 minute story.
+## What To Say
 
 ### Opening
 
-“This is `PUSD`, Private USD. It is a dollar-backed stablecoin on Monad testnet. The important difference is that onramp and offramp are tied to a real banking rail through Column, and once funds are minted, the balance moves privately through Unlink.”
+“This demo shows the full buyer journey for Private USD. We start with regular cash in a linked bank account, then an AI agent helps the user shop, and only when the user approves does the system privately convert cash into `PUSD` and complete the payment.”
 
-“So what you are about to watch is not a mock blockchain widget. It is a real fiat movement, a real onchain mint, a real private transfer, a real onchain burn, and then a machine-payment flow on top.”
+“The important point is that the conversion is not manual and it is not public in the user’s wallet. The user starts with cash, the system moves value privately through Unlink, and the payment rail can still satisfy an x402-style machine checkout.”
 
-### Step 1: Public Metadata
+### Step 1: Show The Live System
 
-“First, I show the public metadata. This proves the app is live, we are on Monad testnet, and the token standard is EIP-3009 so it is compatible with x402-style payment flows.”
+Click: `Show Live System Info`
 
-Expected visual:
-- the log shows `Public metadata`
+Say:
+
+“First I show the live stack. This worker is running on Cloudflare, the token is `PUSD` on Monad testnet, and the token standard is EIP-3009 so it can support x402-style payment flows.”
+
+What to point at:
 - chain id `10143`
 - token `PUSD`
+- live system metadata in the event stream
 
-### Step 2: Reset State
+### Step 2: Create A Bank-Linked Buyer
 
-“Now I reset the demo state so the judges can see a clean run from zero.”
+Click: `Create Buyer Account + Add Starter Cash`
 
-Expected visual:
-- the log shows `State reset`
+Say:
 
-### Step 3: Column Smoke
+“Now I create a brand-new buyer. This step provisions a real sandbox bank account under our platform and seeds it with starter cash, so the judges can see this user is actually linked to the banking rail.”
 
-“Before I even touch the token, I prove the banking side is real. This step creates real sandbox banking objects in Column, simulates incoming fiat, and executes a real book transfer.”
+“This is the user’s fiat starting point. No crypto yet.”
 
-“This is important because our stablecoin is not floating against imaginary reserves. The reserve accounting starts from the banking rail.”
+What to point at:
+- `startingCashUsd`
+- `linkedBankAccountId`
+- `privateWalletId`
+- `linkedBanking.bankAccountId`
 
-Expected visual:
-- `Column smoke completed`
-- real `reserveEntityId`
-- real `reserveBankAccountId`
-- real `bookTransferId`
+### Step 3: Ask The AI Shopping Agent
 
-### Step 4: Unlink Smoke
+Click: `Ask AI Shopping Agent`
 
-“Next I prove the privacy runtime is actually alive. The Worker is calling a Cloudflare Container that runs the Unlink Node SDK, and it creates a managed private wallet.”
+Say:
 
-“This confirms the privacy leg is not a fallback path.”
+“Now the buyer talks to an AI shopping agent. This response comes from the Cloudflare Workers AI binding. The buyer asks about buying something, and the agent comes back with a product suggestion and a checkout link.”
 
-Expected visual:
-- `Unlink container healthy`
-- `mode: "container"`
-- `sdkAvailable: true`
-- `fallbackUsed: false`
+“The agent is not moving money yet. It is just preparing the purchase and asking for confirmation.”
 
-### Step 5: Mint / Onramp
+What to point at:
+- `mode: "cloudflare-ai"`
+- the agent reply text
+- the quoted checkout link
+- the quoted price
 
-“Now I onramp. This creates a mint intent for 321 cents.”
+### Step 4: Show There Is No Private Balance Yet
 
-“Behind the scenes, three real things happen in sequence:
-one, fiat moves by Column book transfer into reserve;
-two, `PUSD` is minted on Monad;
-three, the minted value is deposited into Unlink so the user’s balance is private.”
+Click: `Check Cash And Private USD`
 
-“The key proof is the log shows all three identifiers: a real Column transfer id, a real Monad transaction hash, and a real Unlink operation.”
+Say:
 
-Expected visual:
-- `Mint intent created`
-- poll status updates
-- `Mint completed`
-- real `book_...`
-- real Monad tx hash
-- real Unlink tx hash embedded in `unlink_operation_id`
+“Before the buyer confirms, I show the balances. The buyer still only has cash. The private `PUSD` balance is zero.”
 
-### Step 6: Balances After Mint
+“This matters because the conversion should happen on demand, not in advance.”
 
-“Now I show the balance snapshot. The user’s fiat is down by 321 cents, their private `PUSD` is up by 321 cents, and the system reserve and supply both reflect exactly that amount.”
-
-“So the reserve and the stablecoin supply stay in lockstep.”
-
-Expected visual:
-- `fiatCents: 499679`
-- `privatePusdCents: 321`
-- `reserveCents: 321`
-- `totalSupplyCents: 321`
-
-### Step 7: Burn / Offramp
-
-“Now I redeem the full amount.”
-
-“Again, three real things happen:
-one, value exits Unlink privately;
-two, `PUSD` is burned on Monad;
-three, the reserve pays the user back through a real Column book transfer.”
-
-“That means dollars do not leave reserve until the token supply is actually reduced.”
-
-Expected visual:
-- `Burn intent created`
-- poll status updates
-- `Burn completed`
-- real Unlink withdraw tx
-- real Monad burn tx
-- real `book_...` payout transfer
-
-### Step 8: Balances After Burn
-
-“And now the final accounting check: the user’s fiat is fully restored, the private balance is zero, reserve is zero, and total supply is zero.”
-
-“So the full loop returns to a clean state with no orphaned supply.”
-
-Expected visual:
-- `fiatCents: 500000`
+What to point at:
+- `fiatCents`
 - `privatePusdCents: 0`
-- `reserveCents: 0`
-- `totalSupplyCents: 0`
 
-### Step 9: x402 Machine Payment
+### Step 5: Confirm Purchase And Pay Privately
 
-“The last layer is what makes this useful for autonomous agents.”
+Click: `Confirm Purchase + Pay Privately`
 
-“Here I trigger an x402-style paid endpoint. It first returns a `402 Payment Required` challenge. The system then ensures funds, moves the value into the shared payer path, settles the challenge, and retries automatically.”
+Say:
 
-“So an agent can start with fiat, convert into `PUSD`, and then satisfy a paid API request without human intervention.”
+“Now the buyer approves the purchase. At this point the agent checks the private balance. If the buyer does not have enough `PUSD`, the agent uses the payment skill to convert cash into `PUSD` first.”
 
-Expected visual:
-- `x402 challenge issued`
-- `Shared payer funded`
-- `Challenge settled`
-- `x402 resource delivered`
+“Under the hood, the flow is: a book transfer moves cash into reserve, `PUSD` is minted on Monad, that value is deposited privately into Unlink, then just the payment amount is routed into the x402 payer path and the checkout request is retried.”
+
+“So the conversion is automatic and private. The user does not manually move tokens.”
+
+What to point at:
+- the line saying the private balance is low
+- the `Cash to PUSD conversion started` event
+- the completed mint with:
+  - real `book_...` transfer id
+  - real Monad tx hash
+  - real Unlink operation id
+- the `Checkout link requested payment` event
+- the `Agent used the payment skill` event
+- the final `Checkout request succeeded` event
 
 Important wording:
-- the UI should make clear this x402 settlement is `demo-ledger`
-- do not claim it is a production facilitator rail
+- say “private conversion” or “private onramp”
+- do not say the x402 settlement itself is fully production onchain
+- the UI labels that step as `demo-ledger`, which is accurate
+
+### Step 6: Show The Leftover Private Balance
+
+This happens automatically inside the previous step because the screen prints a balance snapshot at the end.
+
+Say:
+
+“I intentionally mint more than the checkout amount. That leaves a small private balance behind, so I can show the user does not get stuck in crypto. They can redeem the unused amount back into cash.”
+
+What to point at:
+- the post-purchase balance snapshot
+- `privatePusdCents` should still be greater than `0`
+
+### Step 7: Cash Out The Leftover Private USD
+
+Click: `Cash Out Leftover Private USD`
+
+Say:
+
+“Now I redeem the remaining private balance back into regular cash. Value exits Unlink privately, `PUSD` is burned on Monad, and the linked bank account is credited back through the banking rail.”
+
+“That closes the loop. The user can go from cash, to private dollars, to a machine payment, and then back to cash.”
+
+What to point at:
+- the `Cash-out started` event
+- the completed burn with:
+  - real Unlink withdraw tx
+  - real Monad burn tx
+  - real `book_...` payout transfer
+- the final balance snapshot
 
 ### Closing
 
-“So the full product story is:
-real dollars come in through Column,
-private dollars live in Unlink,
-token supply is enforced on Monad,
-and the same value can power machine-native payments.”
+“So the full product story is simple: a real bank-linked user asks an AI agent to buy something, the agent privately converts cash into `PUSD` only when needed, pays a machine checkout, and then redeems the leftover balance back to cash.”
 
-“That means we are combining real banking rails, private onchain custody, and programmable AI payments in a single flow.”
+“That combines real banking rails, private onchain custody through Unlink, programmable settlement on Monad, and AI-native purchasing behavior in one flow.”
 
-## If Judges Ask Follow-Ups
+## Short 90-Second Version
+
+If time is tight, say this:
+
+“I start by creating a new bank-linked buyer with cash in their account. Then the buyer asks our AI shopping agent to find a product. When the buyer confirms, the agent sees there is no private `PUSD` yet, so it privately converts cash into `PUSD`, pays the x402-style checkout, and then I cash the leftover balance back into the bank account. The important part is that the user starts and ends with cash, while the token movement stays private in the middle.”
+
+## Practical Notes
+
+1. Use a fresh buyer name for each demo run.
+2. Keep the shopping prompt focused on buying a physical item.
+3. Let the event stream scroll; it is the proof surface for the demo.
+4. Pause on ids and tx hashes only long enough to show they are real.
+5. Emphasize the product sequence:
+   - bank account
+   - AI recommendation
+   - buyer confirmation
+   - private conversion
+   - machine payment
+   - cash-out
+
+## Judge Follow-Ups
 
 ### “What is actually private?”
 
-“The user’s ongoing balance and transfers are private once the value is inside Unlink. The pool entry and exit are still public-chain boundary events, but the user never needs to publicly hold `PUSD` in their own wallet.”
+“The user’s token balance and transfers are private once the value is inside Unlink. The pool entry and exit are still visible boundary events, but the user never has to publicly hold `PUSD` in their own wallet.”
+
+### “Is the AI step real?”
+
+“Yes. The product recommendation response in this UI comes from the Cloudflare Workers AI binding.”
 
 ### “Is the banking side real?”
 
-“Yes. The Worker performs real Column sandbox entity creation, bank account creation, simulated funding, and real book transfers.”
+“Yes. The bank-linking and cash movement use real Column sandbox entities, bank accounts, seeded cash, and book transfers.”
 
 ### “Is the chain side real?”
 
-“Yes. The mint and burn are real Monad testnet transactions, and the token is deployed onchain.”
+“Yes. The mint and burn are real Monad testnet transactions and the Unlink movement is real.”
 
-### “Is the x402 payment fully onchain?”
+### “Is the x402 rail fully production?”
 
-“The user experience and retry loop are real, but the final facilitator settlement in this demo is explicitly labeled `demo-ledger`. That part is the demo abstraction, not the privacy, mint, burn, or banking rails.”
-
-## Practical Demo Notes
-
-1. Use a fresh browser tab with the terminal UI already loaded.
-2. Paste the admin token before judges arrive.
-3. Keep the user id stable for one clean run.
-4. Prefer `Run Guided Demo` unless a judge asks to inspect a specific step.
-5. If you want to slow down for explanation, use the individual buttons in this order:
-   - `Show Public Metadata`
-   - `Reset State`
-   - `Column Smoke`
-   - `Unlink Smoke`
-   - `Mint 321c`
-   - `Balances`
-   - `Burn 321c`
-   - `Balances`
-   - `Run x402 Flow`
+“The end-user flow is real, but the facilitator settlement in this demo is intentionally labeled `demo-ledger`. The private onramp, private custody, and mint/burn path are the real parts we are proving here.”

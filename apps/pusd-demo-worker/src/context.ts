@@ -9,8 +9,17 @@ interface NamedContainerBinding {
 	getByName(name: string): NamedContainerStub
 }
 
+interface WorkersAiBinding {
+	run(
+		model: string,
+		input: Record<string, unknown>,
+		options?: Record<string, unknown>
+	): Promise<unknown>
+}
+
 export type Env = SharedHonoEnv & {
 	DB: D1Database
+	AI?: WorkersAiBinding
 	DEMO_INITIAL_USER_FIAT_CENTS: string
 	DEMO_PRICE_CENTS: string
 	MAX_INTENT_AMOUNT_CENTS: string

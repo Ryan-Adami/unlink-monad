@@ -5,6 +5,10 @@
 	"compatibility_date": "2025-09-20",
 	"compatibility_flags": ["nodejs_compat"],
 	"routes": [],
+	"ai": {
+		"binding": "AI",
+		"remote": true
+	},
 	"durable_objects": {
 		"bindings": [
 			{

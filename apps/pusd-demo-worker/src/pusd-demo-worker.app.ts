@@ -144,6 +144,7 @@ interface UnlinkSmokeResult {
 }
 
 const app = new Hono<App>()
+const MONAD_SOCIALSCAN_BASE_URL = 'https://monad-testnet.socialscan.io'
 
 const schemaStatements = [
 	`CREATE TABLE IF NOT EXISTS system_state (
@@ -1242,7 +1243,15 @@ async function parseJson<T>(request: Request): Promise<T> {
 	return (await request.json()) as T
 }
 
-function renderTerminalDemoUi(): string {
+function renderTerminalDemoUi(options?: {
+	initialAdminToken?: string
+	initialUserId?: string
+	autoplay?: boolean
+}): string {
+	const initialAdminToken = options?.initialAdminToken ?? ''
+	const initialUserId = options?.initialUserId ?? 'judge-demo'
+	const autoplay = options?.autoplay ?? false
+
 	return `<!doctype html>
 <html lang="en">
 	<head>
@@ -1253,13 +1262,16 @@ function renderTerminalDemoUi(): string {
 			:root {
 				--bg: #07110d;
 				--bg-soft: #0d1914;
-				--panel: rgba(8, 20, 15, 0.88);
-				--line: rgba(81, 255, 179, 0.18);
+				--panel: rgba(7, 18, 13, 0.9);
+				--panel-soft: rgba(11, 25, 19, 0.86);
+				--line: rgba(81, 255, 179, 0.14);
+				--line-strong: rgba(81, 255, 179, 0.28);
 				--text: #d7ffe8;
 				--muted: #81d8a7;
 				--green: #51ffb3;
 				--amber: #ffd86b;
 				--red: #ff7b7b;
+				--shadow: 0 22px 70px rgba(0, 0, 0, 0.42);
 			}
 
 			* {
@@ -1288,24 +1300,25 @@ function renderTerminalDemoUi(): string {
 			}
 
 			.shell {
-				max-width: 1320px;
+				max-width: 1360px;
 				margin: 0 auto;
-				padding: 24px;
+				padding: 28px;
 			}
 
 			.header {
 				display: grid;
-				grid-template-columns: 1.3fr 1fr;
-				gap: 18px;
-				margin-bottom: 18px;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				gap: 20px;
+				margin-bottom: 20px;
+				align-items: stretch;
 			}
 
 			.panel {
 				position: relative;
 				border: 1px solid var(--line);
 				background: var(--panel);
-				border-radius: 16px;
-				box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+				border-radius: 18px;
+				box-shadow: var(--shadow);
 				overflow: hidden;
 			}
 
@@ -1322,9 +1335,9 @@ function renderTerminalDemoUi(): string {
 				display: flex;
 				align-items: center;
 				justify-content: space-between;
-				padding: 12px 16px;
+				padding: 14px 18px;
 				border-bottom: 1px solid var(--line);
-				background: rgba(255, 255, 255, 0.02);
+				background: rgba(255, 255, 255, 0.018);
 				font-size: 12px;
 				text-transform: uppercase;
 				letter-spacing: 0.12em;
@@ -1351,7 +1364,7 @@ function renderTerminalDemoUi(): string {
 			}
 
 			.content {
-				padding: 18px;
+				padding: 20px;
 			}
 
 			h1, h2, p {
@@ -1360,7 +1373,9 @@ function renderTerminalDemoUi(): string {
 
 			.hero {
 				display: grid;
-				gap: 12px;
+				gap: 14px;
+				min-height: 100%;
+				align-content: start;
 			}
 
 			.kicker {
@@ -1379,22 +1394,22 @@ function renderTerminalDemoUi(): string {
 			.subtle {
 				color: var(--muted);
 				font-size: 14px;
-				line-height: 1.6;
-				max-width: 60ch;
+				line-height: 1.7;
+				max-width: 58ch;
 			}
 
 			.metrics {
 				display: grid;
 				grid-template-columns: repeat(3, minmax(0, 1fr));
 				gap: 12px;
-				margin-top: 8px;
+				margin-top: 10px;
 			}
 
 			.metric {
-				padding: 12px;
+				padding: 14px;
 				border: 1px solid var(--line);
 				border-radius: 12px;
-				background: rgba(255, 255, 255, 0.015);
+				background: rgba(255, 255, 255, 0.018);
 			}
 
 			.metric .label {
@@ -1407,24 +1422,66 @@ function renderTerminalDemoUi(): string {
 			}
 
 			.metric .value {
-				font-size: 18px;
+				font-size: 19px;
 				color: var(--text);
 			}
 
 			.layout {
 				display: grid;
-				grid-template-columns: 420px minmax(0, 1fr);
-				gap: 18px;
+				grid-template-columns: 408px minmax(0, 1fr);
+				gap: 20px;
 			}
 
 			.controls {
 				display: grid;
 				gap: 16px;
+				align-content: start;
 			}
 
 			.stack {
 				display: grid;
 				gap: 12px;
+			}
+
+			.flow-grid {
+				display: grid;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				gap: 12px;
+				margin-top: 6px;
+			}
+
+			.flow-step {
+				padding: 14px;
+				border: 1px solid var(--line);
+				border-radius: 12px;
+				background: var(--panel-soft);
+			}
+
+			.flow-step .index {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				width: 26px;
+				height: 26px;
+				border-radius: 999px;
+				border: 1px solid var(--line-strong);
+				color: var(--green);
+				font-size: 11px;
+				margin-bottom: 10px;
+			}
+
+			.flow-step strong {
+				display: block;
+				font-size: 13px;
+				color: var(--text);
+				margin-bottom: 6px;
+			}
+
+			.flow-step span {
+				display: block;
+				font-size: 12px;
+				line-height: 1.6;
+				color: var(--muted);
 			}
 
 			label {
@@ -1436,25 +1493,39 @@ function renderTerminalDemoUi(): string {
 				color: var(--muted);
 			}
 
-			input {
+			input,
+			textarea {
 				width: 100%;
-				padding: 12px 14px;
+				padding: 13px 14px;
 				border-radius: 10px;
 				border: 1px solid var(--line);
-				background: rgba(0, 0, 0, 0.3);
+				background: rgba(0, 0, 0, 0.26);
 				color: var(--text);
 				font: inherit;
+				outline: none;
+			}
+
+			input:focus,
+			textarea:focus {
+				border-color: var(--line-strong);
+				box-shadow: 0 0 0 3px rgba(81, 255, 179, 0.08);
+			}
+
+			textarea {
+				min-height: 120px;
+				resize: vertical;
 			}
 
 			button {
 				appearance: none;
 				border: 1px solid var(--line);
 				border-radius: 10px;
+				min-height: 56px;
 				padding: 12px 14px;
 				background: rgba(81, 255, 179, 0.05);
 				color: var(--text);
 				font: inherit;
-				text-align: left;
+				text-align: center;
 				cursor: pointer;
 				transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
 			}
@@ -1467,6 +1538,7 @@ function renderTerminalDemoUi(): string {
 
 			button.primary {
 				background: linear-gradient(135deg, rgba(81, 255, 179, 0.16), rgba(255, 216, 107, 0.08));
+				border-color: rgba(81, 255, 179, 0.24);
 			}
 
 			button:disabled {
@@ -1481,25 +1553,48 @@ function renderTerminalDemoUi(): string {
 				gap: 10px;
 			}
 
+			.button-grid .primary {
+				grid-column: 1 / -1;
+			}
+
+			.button-grid .full {
+				grid-column: 1 / -1;
+			}
+
 			.legend {
 				font-size: 12px;
-				line-height: 1.6;
+				line-height: 1.7;
 				color: var(--muted);
 			}
 
 			.terminal {
-				min-height: 640px;
+				height: 680px;
+				min-height: 680px;
 				display: grid;
 				grid-template-rows: auto 1fr;
 			}
 
 			.log {
-				padding: 16px 18px 24px;
+				padding: 18px 20px 26px;
 				overflow: auto;
 				font-size: 13px;
 				line-height: 1.7;
 				white-space: pre-wrap;
 				word-break: break-word;
+				background:
+					linear-gradient(180deg, rgba(255, 255, 255, 0.01), transparent 12%),
+					linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.02));
+			}
+
+			.log a {
+				color: #8fdcff;
+				text-decoration: underline;
+				text-decoration-color: rgba(143, 220, 255, 0.55);
+				text-underline-offset: 2px;
+			}
+
+			.log a:hover {
+				color: #c8efff;
 			}
 
 			.line {
@@ -1538,8 +1633,8 @@ function renderTerminalDemoUi(): string {
 			}
 
 			.note {
-				margin-top: 12px;
-				padding-top: 12px;
+				margin-top: 14px;
+				padding-top: 14px;
 				border-top: 1px dashed var(--line);
 				color: var(--muted);
 				font-size: 12px;
@@ -1550,11 +1645,17 @@ function renderTerminalDemoUi(): string {
 				.header,
 				.layout,
 				.metrics,
-				.button-grid {
+				.button-grid,
+				.flow-grid {
 					grid-template-columns: 1fr;
 				}
 
+				.button-grid .primary {
+					grid-column: auto;
+				}
+
 				.terminal {
+					height: 480px;
 					min-height: 480px;
 				}
 			}
@@ -1596,14 +1697,47 @@ function renderTerminalDemoUi(): string {
 				</div>
 				<div class="panel">
 					<div class="titlebar">
-						<span>Judge Narrative</span>
-						<span>Ordered Flow</span>
+						<span>Live Demo Flow</span>
+						<span>Plain-English Mode</span>
 					</div>
 					<div class="content stack">
-						<p class="legend">1. Prove the system is live. 2. Prove the banking rail is real. 3. Onramp into private balance. 4. Offramp back to fiat. 5. Show the agent payment loop.</p>
-						<p class="legend">Use <strong>Run Guided Demo</strong> for a single clean sequence, or step through individual actions if you want to pause and explain each tx hash.</p>
+						<p class="legend">This screen follows the exact story you want to tell: create a bank-linked buyer, let the buyer talk to an AI shopping agent, then show cash becoming private dollars and powering a machine payment.</p>
+						<div class="flow-grid">
+							<div class="flow-step">
+								<span class="index">01</span>
+								<strong>Create A Buyer</strong>
+								<span>Open a fresh bank-linked user and show starter cash in the linked account.</span>
+							</div>
+							<div class="flow-step">
+								<span class="index">02</span>
+								<strong>Ask The AI Agent</strong>
+								<span>The buyer asks about purchasing something, and the agent finds a product plus a checkout link.</span>
+							</div>
+							<div class="flow-step">
+								<span class="index">03</span>
+								<strong>Check Private Dollars</strong>
+								<span>When the buyer confirms, the agent checks whether enough private PUSD is already available.</span>
+							</div>
+							<div class="flow-step">
+								<span class="index">04</span>
+								<strong>Convert Cash Privately</strong>
+								<span>If needed, cash moves by book transfer, PUSD is minted on Monad, then deposited into Unlink.</span>
+							</div>
+							<div class="flow-step">
+								<span class="index">05</span>
+								<strong>Pay The x402 Checkout</strong>
+								<span>The agent funds the payer path from private PUSD, settles the challenge, and retries automatically.</span>
+							</div>
+							<div class="flow-step">
+								<span class="index">06</span>
+								<strong>Cash Out Leftovers</strong>
+								<span>Any leftover private PUSD is burned back into cash so the user finishes clean.</span>
+							</div>
+						</div>
 						<div class="note">
-							Public route: <code>/demo/public</code><br />
+							AI responses come from the Cloudflare Workers AI binding.<br />
+							Banking uses real Column sandbox accounts.<br />
+							Private value moves through Unlink and settles on Monad testnet.<br />
 							Protected routes require <code>${DEMO_ADMIN_AUTH_HEADER}</code>.<br />
 							x402 settlement is explicitly labeled <code>demo-ledger</code>.
 						</div>
@@ -1621,25 +1755,29 @@ function renderTerminalDemoUi(): string {
 						<div class="content stack">
 							<label>
 								Admin Token
-								<input id="adminToken" type="password" placeholder="Paste demo admin token" />
+								<input id="adminToken" type="password" autocomplete="off" placeholder="Paste demo admin token" />
 							</label>
 							<label>
-								Demo User
-								<input id="userId" type="text" value="judge-demo" />
+								Buyer Name
+								<input id="userId" type="text" autocomplete="off" value="judge-demo" />
+							</label>
+							<label>
+								What does the buyer want?
+								<textarea id="buyerMessage" autocomplete="off" placeholder="Example: I want to buy a lightweight travel backpack under $80.">I want to buy a lightweight travel backpack under $80.</textarea>
 							</label>
 							<div class="button-grid">
-								<button class="primary" id="guidedDemo">Run Guided Demo</button>
-								<button id="showPublic">Show Public Metadata</button>
-								<button id="resetState">Reset State</button>
-								<button id="columnSmoke">Column Smoke</button>
-								<button id="unlinkSmoke">Unlink Smoke</button>
-								<button id="mintFunds">Mint 321c</button>
-								<button id="showBalances">Balances</button>
-								<button id="burnFunds">Burn 321c</button>
-								<button id="runX402">Run x402 Flow</button>
+								<button class="primary" id="guidedDemo">Run Full Buyer Demo</button>
+								<button class="full" id="resetState">Reset Everything (Fresh Demo Start)</button>
+								<button class="full" id="clearLog">Clear Live Event Stream</button>
+								<button class="full" id="showPublic">1. Show Live System Info</button>
+								<button id="setupBuyer">2. Create Buyer + Add Starter Cash</button>
+								<button id="askAgent">3. Ask AI Shopping Agent</button>
+								<button id="showBalances">4. Check Cash + Private USD</button>
+								<button id="approvePurchase">5. Confirm Purchase + Pay Privately</button>
+								<button class="full" id="burnFunds">6. Cash Out Leftover Private USD</button>
 							</div>
 							<div class="note">
-								The token stays in browser memory only. This page stores it in localStorage for convenience on the same browser, so you do not need to re-paste during rehearsals.
+								Use the numbered buttons when you want to pause between steps and explain what just happened. Use <code>Reset Everything</code> before each judge run to clear the screen, wipe the demo state, and start from a fresh baseline.
 							</div>
 						</div>
 					</div>
@@ -1649,7 +1787,7 @@ function renderTerminalDemoUi(): string {
 						<span>Live Event Stream</span>
 						<span><span id="statusText">Ready</span><span class="cursor"></span></span>
 					</div>
-					<div class="log" id="log"></div>
+					<div class="log" id="log" role="log" aria-live="polite"></div>
 				</div>
 			</section>
 		</div>
@@ -1657,17 +1795,29 @@ function renderTerminalDemoUi(): string {
 		<script>
 			const adminTokenInput = document.getElementById('adminToken')
 			const userIdInput = document.getElementById('userId')
+			const buyerMessageInput = document.getElementById('buyerMessage')
 			const log = document.getElementById('log')
 			const statusText = document.getElementById('statusText')
 			const metricUser = document.getElementById('metric-user')
+			const initialConfig = {
+				adminToken: ${JSON.stringify(initialAdminToken)},
+				userId: ${JSON.stringify(initialUserId)},
+				autoplay: ${autoplay ? 'true' : 'false'},
+			}
 
 			const state = {
 				busy: false,
-				adminToken: localStorage.getItem('pusd-demo-admin-token') ?? '',
+				adminToken: initialConfig.adminToken || localStorage.getItem('pusd-demo-admin-token') || '',
+				autoplayStarted: false,
+				lastOffer: null,
 			}
+
+			userIdInput.value = initialConfig.userId || userIdInput.value
+			metricUser.textContent = userIdInput.value.trim() || 'judge-demo'
 
 			if (state.adminToken !== '') {
 				adminTokenInput.value = state.adminToken
+				localStorage.setItem('pusd-demo-admin-token', state.adminToken)
 			}
 
 			adminTokenInput.addEventListener('input', () => {
@@ -1683,16 +1833,101 @@ function renderTerminalDemoUi(): string {
 				statusText.textContent = value
 			}
 
+			function monadExplorerLink(value) {
+				if (/^0x[a-fA-F0-9]{64}$/.test(value)) {
+					return '${MONAD_SOCIALSCAN_BASE_URL}/tx/' + value
+				}
+				if (/^0x[a-fA-F0-9]{40}$/.test(value)) {
+					return '${MONAD_SOCIALSCAN_BASE_URL}/address/' + value
+				}
+				if (/^https?:\\/\\//.test(value)) {
+					return value
+				}
+				return null
+			}
+
+			function appendLinkedSegments(parent, text) {
+				const source = String(text)
+				const regex = /(https?:\\/\\/\\S+|0x[a-fA-F0-9]{64}|0x[a-fA-F0-9]{40})/g
+				let lastIndex = 0
+				for (const match of source.matchAll(regex)) {
+					const index = match.index ?? 0
+					if (index > lastIndex) {
+						parent.appendChild(document.createTextNode(source.slice(lastIndex, index)))
+					}
+					const value = match[0]
+					const href = monadExplorerLink(value)
+					if (href === null) {
+						parent.appendChild(document.createTextNode(value))
+					} else {
+						const anchor = document.createElement('a')
+						anchor.href = href
+						anchor.target = '_blank'
+						anchor.rel = 'noreferrer noopener'
+						anchor.textContent = value
+						parent.appendChild(anchor)
+					}
+					lastIndex = index + value.length
+				}
+				if (lastIndex < source.length) {
+					parent.appendChild(document.createTextNode(source.slice(lastIndex)))
+				}
+			}
+
+			function appendJsonLike(parent, value, depth = 0) {
+				const indent = '  '.repeat(depth)
+				if (value === null) {
+					parent.appendChild(document.createTextNode('null'))
+					return
+				}
+				if (typeof value === 'string') {
+					parent.appendChild(document.createTextNode('"'))
+					appendLinkedSegments(parent, value)
+					parent.appendChild(document.createTextNode('"'))
+					return
+				}
+				if (typeof value === 'number' || typeof value === 'boolean') {
+					parent.appendChild(document.createTextNode(String(value)))
+					return
+				}
+				if (Array.isArray(value)) {
+					parent.appendChild(document.createTextNode('[\\n'))
+					value.forEach((entry, index) => {
+						parent.appendChild(document.createTextNode('  '.repeat(depth + 1)))
+						appendJsonLike(parent, entry, depth + 1)
+						parent.appendChild(document.createTextNode(index === value.length - 1 ? '\\n' : ',\\n'))
+					})
+					parent.appendChild(document.createTextNode(indent + ']'))
+					return
+				}
+				if (typeof value === 'object') {
+					const entries = Object.entries(value)
+					parent.appendChild(document.createTextNode('{\\n'))
+					entries.forEach(([key, entry], index) => {
+						parent.appendChild(document.createTextNode('  '.repeat(depth + 1) + key + ': '))
+						appendJsonLike(parent, entry, depth + 1)
+						parent.appendChild(document.createTextNode(index === entries.length - 1 ? '\\n' : ',\\n'))
+					})
+					parent.appendChild(document.createTextNode(indent + '}'))
+					return
+				}
+				parent.appendChild(document.createTextNode(String(value)))
+			}
+
 			function writeLine(kind, message, data) {
 				const line = document.createElement('span')
 				line.className = 'line ' + kind
-				let text = message
+				line.appendChild(document.createTextNode('> ' + message))
 				if (data !== undefined) {
-					text += ' ' + JSON.stringify(data, null, 2)
+					line.appendChild(document.createTextNode(' '))
+					appendJsonLike(line, data)
 				}
-				line.textContent = '> ' + text
 				log.appendChild(line)
 				log.scrollTop = log.scrollHeight
+			}
+
+			function clearLog() {
+				log.replaceChildren()
 			}
 
 			function sleep(ms) {
@@ -1701,6 +1936,10 @@ function renderTerminalDemoUi(): string {
 
 			function getUserId() {
 				return userIdInput.value.trim() || 'judge-demo'
+			}
+
+			function getBuyerMessage() {
+				return buyerMessageInput.value.trim()
 			}
 
 			function getAdminToken() {
@@ -1731,6 +1970,10 @@ function renderTerminalDemoUi(): string {
 				return JSON.parse(decodeURIComponent(escape(atob(value))))
 			}
 
+			function centsToUsd(cents) {
+				return '$' + (cents / 100).toFixed(2)
+			}
+
 			async function request(path, options = {}, requiresAuth = false) {
 				const headers = new Headers(options.headers || {})
 				if (requiresAuth) {
@@ -1746,6 +1989,11 @@ function renderTerminalDemoUi(): string {
 					throw new Error(typeof body === 'string' ? body : JSON.stringify(body))
 				}
 				return { response, body }
+			}
+
+			async function getBalances() {
+				const { body } = await request('/balances?userId=' + encodeURIComponent(getUserId()), {}, true)
+				return body
 			}
 
 			async function pollIntent(pollPath, label) {
@@ -1788,73 +2036,96 @@ function renderTerminalDemoUi(): string {
 
 			async function showPublic() {
 				const { body } = await request('/demo/public')
-				writeLine('ok', 'Public metadata', body)
+				writeLine('ok', 'Live system info', body)
 			}
 
 			async function resetState() {
+				clearLog()
+				writeLine('info', 'Resetting the browser view and server-side demo state')
 				const { body } = await request('/admin/reset', {
 					method: 'POST',
 				}, true)
-				writeLine('ok', 'State reset', body)
+				state.lastOffer = null
+				writeLine('ok', 'Demo state reset', body)
+				writeLine('ok', 'Fresh start ready. Begin with step 1.')
 			}
 
-			async function runColumnSmoke() {
-				const { body } = await request('/admin/live-column-smoke', {
-					method: 'POST',
-					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({
-						fundingAmountCents: 1000,
-						transferAmountCents: 100,
-					}),
-				}, true)
-				writeLine('ok', 'Column smoke completed', body.result)
-			}
-
-			async function runUnlinkSmoke() {
-				const { body } = await request('/admin/unlink-smoke', {
+			async function setupBuyer() {
+				const { body } = await request('/admin/demo-buyer', {
 					method: 'POST',
 					headers: { 'content-type': 'application/json' },
 					body: JSON.stringify({
 						userId: getUserId(),
 					}),
 				}, true)
-				writeLine('ok', 'Unlink container healthy', body.result)
-			}
-
-			async function runMint() {
-				const { body } = await request('/mint-intents', {
-					method: 'POST',
-					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({
-						userId: getUserId(),
-						amountCents: 321,
-					}),
-				}, true)
-				writeLine('info', 'Mint intent created', body.intent)
-				const intent = body.async ? await pollIntent(body.pollPath, 'Mint') : body.intent
-				writeLine('ok', 'Mint completed', intent)
+				writeLine('ok', 'Buyer account is linked and funded', body)
 			}
 
 			async function showBalances() {
-				const { body } = await request('/balances?userId=' + encodeURIComponent(getUserId()), {}, true)
+				const body = await getBalances()
 				writeLine('ok', 'Balance snapshot', body)
 			}
 
-			async function runBurn() {
-				const { body } = await request('/burn-intents', {
+			async function askAgent() {
+				const message = getBuyerMessage()
+				if (message === '') {
+					throw new Error('Enter a shopping question first')
+				}
+
+				writeLine('info', 'Buyer asks', {
+					userId: getUserId(),
+					message,
+				})
+
+				const { body } = await request('/demo/assistant', {
 					method: 'POST',
 					headers: { 'content-type': 'application/json' },
 					body: JSON.stringify({
 						userId: getUserId(),
-						amountCents: 321,
+						message,
 					}),
-				}, true)
-				writeLine('info', 'Burn intent created', body.intent)
-				const intent = body.async ? await pollIntent(body.pollPath, 'Burn') : body.intent
-				writeLine('ok', 'Burn completed', intent)
+				})
+
+				state.lastOffer = body
+				writeLine('ok', 'AI shopping agent reply', body)
 			}
 
-			async function runX402() {
+			async function runPurchaseFlow() {
+				if (state.lastOffer === null) {
+					await askAgent()
+				}
+
+				const offer = state.lastOffer
+				const startingBalances = await getBalances()
+				writeLine('info', 'Buyer confirms the purchase', {
+					price: centsToUsd(offer.priceCents),
+					privateUsdBefore: centsToUsd(startingBalances.user.privatePusdCents),
+				})
+
+				const targetPrivateBalanceCents = offer.targetPrivateBalanceCents
+				if (startingBalances.user.privatePusdCents < targetPrivateBalanceCents) {
+					const topUpAmountCents = targetPrivateBalanceCents - startingBalances.user.privatePusdCents
+					writeLine('info', 'Private balance is low, converting cash into Private USD', {
+						topUpAmountCents,
+						topUpAmountUsd: centsToUsd(topUpAmountCents),
+					})
+					const { body } = await request('/mint-intents', {
+						method: 'POST',
+						headers: { 'content-type': 'application/json' },
+						body: JSON.stringify({
+							userId: getUserId(),
+							amountCents: topUpAmountCents,
+						}),
+					}, true)
+					writeLine('info', 'Cash to PUSD conversion started', body.intent)
+					const intent = body.async ? await pollIntent(body.pollPath, 'Cash to PUSD') : body.intent
+					writeLine('ok', 'Private USD is ready', intent)
+				} else {
+					writeLine('ok', 'Buyer already has enough Private USD', {
+						privateUsdAvailable: centsToUsd(startingBalances.user.privatePusdCents),
+					})
+				}
+
 				const payResponse = await fetch('/demo/paid')
 				if (payResponse.status !== 402) {
 					throw new Error('Expected 402 from /demo/paid')
@@ -1864,7 +2135,7 @@ function renderTerminalDemoUi(): string {
 					throw new Error('PAYMENT-REQUIRED header missing')
 				}
 				const challenge = decodeBase64Json(challengeHeader)
-				writeLine('warn', 'x402 challenge issued', challenge)
+				writeLine('warn', 'Checkout link requested payment', challenge)
 
 				await request('/x402/ensure-funds', {
 					method: 'POST',
@@ -1874,8 +2145,8 @@ function renderTerminalDemoUi(): string {
 						amountCents: challenge.amountCents,
 					}),
 				}, true)
-				writeLine('ok', 'Shared payer funded', {
-					amountCents: challenge.amountCents,
+				writeLine('ok', 'Agent used the payment skill to move private dollars into the payer path', {
+					amountUsd: centsToUsd(challenge.amountCents),
 				})
 
 				const { body: settleBody } = await request('/facilitator/settle', {
@@ -1885,7 +2156,7 @@ function renderTerminalDemoUi(): string {
 						challengeId: challenge.challengeId,
 					}),
 				}, true)
-				writeLine('ok', 'Challenge settled', settleBody)
+				writeLine('ok', 'Checkout challenge settled', settleBody)
 
 				const signature = encodeBase64Json({
 					challengeId: challenge.challengeId,
@@ -1901,56 +2172,225 @@ function renderTerminalDemoUi(): string {
 				}
 				const paymentResponse = decodeBase64Json(paidResponse.headers.get('PAYMENT-RESPONSE'))
 				const paidBody = await paidResponse.json()
-				writeLine('ok', 'x402 resource delivered', {
+				writeLine('ok', 'Checkout request succeeded', {
 					paidBody,
 					paymentResponse,
 				})
+
+				await showBalances()
+			}
+
+			async function cashOutLeftover() {
+				const balances = await getBalances()
+				if (balances.user.privatePusdCents <= 0) {
+					writeLine('warn', 'There is no leftover Private USD to cash out', balances)
+					return
+				}
+
+				writeLine('info', 'Cashing the leftover Private USD back into the linked bank account', {
+					remainingPrivateUsd: centsToUsd(balances.user.privatePusdCents),
+				})
+
+				const { body } = await request('/burn-intents', {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({
+						userId: getUserId(),
+						amountCents: balances.user.privatePusdCents,
+					}),
+				}, true)
+				writeLine('info', 'Cash-out started', body.intent)
+				const intent = body.async ? await pollIntent(body.pollPath, 'Cash-out') : body.intent
+				writeLine('ok', 'Leftover Private USD is back in cash', intent)
+				await showBalances()
 			}
 
 			async function runGuidedDemo() {
-				writeLine('info', '--- Guided demo start ---')
-				await showPublic()
+				writeLine('info', '--- Buyer demo start ---')
 				await resetState()
-				await runColumnSmoke()
-				await runUnlinkSmoke()
-				await runMint()
+				await showPublic()
+				await setupBuyer()
+				await askAgent()
 				await showBalances()
-				await runBurn()
-				await showBalances()
-				await runX402()
-				writeLine('ok', '--- Guided demo complete ---')
+				await runPurchaseFlow()
+				await cashOutLeftover()
+				writeLine('ok', '--- Buyer demo complete ---')
 			}
 
-			document.getElementById('showPublic').addEventListener('click', () => withBusy('Public Metadata', showPublic))
-			document.getElementById('resetState').addEventListener('click', () => withBusy('Reset State', resetState))
-			document.getElementById('columnSmoke').addEventListener('click', () => withBusy('Column Smoke', runColumnSmoke))
-			document.getElementById('unlinkSmoke').addEventListener('click', () => withBusy('Unlink Smoke', runUnlinkSmoke))
-			document.getElementById('mintFunds').addEventListener('click', () => withBusy('Mint', runMint))
+			document.getElementById('showPublic').addEventListener('click', () => withBusy('System Info', showPublic))
+			document.getElementById('resetState').addEventListener('click', () => withBusy('Reset', resetState))
+			document.getElementById('clearLog').addEventListener('click', () => {
+				clearLog()
+				writeLine('ok', 'Live event stream cleared.')
+			})
+			document.getElementById('setupBuyer').addEventListener('click', () => withBusy('Create Buyer', setupBuyer))
+			document.getElementById('askAgent').addEventListener('click', () => withBusy('AI Agent', askAgent))
 			document.getElementById('showBalances').addEventListener('click', () => withBusy('Balances', showBalances))
-			document.getElementById('burnFunds').addEventListener('click', () => withBusy('Burn', runBurn))
-			document.getElementById('runX402').addEventListener('click', () => withBusy('x402', runX402))
-			document.getElementById('guidedDemo').addEventListener('click', () => withBusy('Guided Demo', runGuidedDemo))
+			document.getElementById('approvePurchase').addEventListener('click', () => withBusy('Private Payment', runPurchaseFlow))
+			document.getElementById('burnFunds').addEventListener('click', () => withBusy('Cash Out', cashOutLeftover))
+			document.getElementById('guidedDemo').addEventListener('click', () => withBusy('Buyer Demo', runGuidedDemo))
 
-			writeLine('ok', 'Console ready. Paste the admin token and run the guided sequence.')
+			writeLine('ok', 'Console ready. Use the numbered buttons to explain each step, or run the full buyer demo.')
+
+			if (initialConfig.autoplay) {
+				writeLine('warn', 'Autoplay enabled. The buyer demo will start automatically in 1.2s.')
+				setTimeout(() => {
+					if (state.autoplayStarted) {
+						return
+					}
+					state.autoplayStarted = true
+					withBusy('Buyer Demo', runGuidedDemo)
+				}, 1200)
+			}
 		</script>
 	</body>
 </html>`
 }
 
 app.get('/demo/public', async (c) => {
+	const treasuryWallet = currentTreasuryAddress(c.env)
+	const sharedPayerWallet = c.env.SHARED_PAYER_WALLET
+
 	return c.json({
 		name: 'PUSD Hackathon Demo Worker',
 		chainId: MONAD_TESTNET_CHAIN_ID,
+		explorerBaseUrl: MONAD_SOCIALSCAN_BASE_URL,
 		token: {
 			name: TOKEN_NAME,
 			symbol: TOKEN_SYMBOL,
 			standard: TOKEN_STANDARD,
+			address: c.env.PUSD_TOKEN_ADDRESS,
+		},
+		onchainRails: {
+			treasuryWallet,
+			sharedPayerWallet,
+		},
+		privateFlow: {
+			note: 'The public deposit and withdrawal boundary transactions are clickable proof onchain. The private balance movement in between is intentionally not visible on a block explorer; you prove it by showing the app balance changes and the successful private spend.',
 		},
 	})
 })
 
+app.post('/demo/assistant', async (c) => {
+	const payload = await parseJson<unknown>(c.req.raw)
+	const userMessage =
+		typeof payload === 'object' &&
+		payload !== null &&
+		'message' in payload &&
+		typeof payload.message === 'string'
+			? payload.message.trim()
+			: ''
+
+	if (userMessage === '') {
+		return c.json({ error: 'A shopping question is required' }, 400)
+	}
+
+	if (c.env.AI === undefined) {
+		return c.json({ error: 'Cloudflare AI binding is unavailable' }, 503)
+	}
+
+	const priceCents = Number.parseInt(c.env.DEMO_PRICE_CENTS, 10) || DEFAULT_DEMO_PRICE_CENTS
+	const targetPrivateBalanceCents = Math.max(300, priceCents * 2)
+	const prompt = [
+		'You are the purchase assistant for a hackathon demo.',
+		'The customer is always asking about buying something.',
+		'Reply in 3 short sentences.',
+		'Sentence 1: say you found a fitting product.',
+		`Sentence 2: mention the sample checkout link https://merchant.example/checkout and say the price is $${(priceCents / 100).toFixed(2)}.`,
+		'Sentence 3: ask the customer to confirm and say you will privately convert cash into PUSD if needed before paying.',
+		`Customer request: ${userMessage}`,
+	].join(' ')
+
+	try {
+		const result = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+			prompt,
+			max_tokens: 180,
+		})
+		const reply =
+			typeof result === 'string'
+				? result.trim()
+				: typeof result === 'object' &&
+					  result !== null &&
+					  'response' in result &&
+					  typeof result.response === 'string'
+					? result.response.trim()
+					: JSON.stringify(result)
+
+		return c.json({
+			mode: 'cloudflare-ai',
+			reply,
+			priceCents,
+			checkoutLink: 'https://merchant.example/checkout',
+			requiresConfirmation: true,
+			targetPrivateBalanceCents,
+		})
+	} catch (error) {
+		return c.json(
+			{
+				error: 'Cloudflare AI request failed',
+				detail: error instanceof Error ? error.message : String(error),
+			},
+			502
+		)
+	}
+})
+
+app.post('/admin/demo-buyer', async (c) => {
+	const authError = requireProtectedRouteAuth(c)
+	if (authError !== null) {
+		return authError
+	}
+
+	const payload = await parseJson<unknown>(c.req.raw)
+	const userId =
+		typeof payload === 'object' &&
+		payload !== null &&
+		'userId' in payload &&
+		typeof payload.userId === 'string' &&
+		payload.userId.trim() !== ''
+			? payload.userId.trim()
+			: 'judge-demo'
+
+	await ensureReady(c, userId)
+	const user = await loadUser(c.env.DB, userId)
+	const liveDetails =
+		currentColumnMode(c.env.COLUMN_MODE) === 'live'
+			? await c.env.DB
+					.prepare(`SELECT * FROM column_live_users WHERE user_id = ?1`)
+					.bind(userId)
+					.first<LiveColumnUserRow>()
+			: null
+
+	return c.json({
+		buyer: {
+			userId,
+			startingCashCents: user.fiat_cents,
+			startingCashUsd: (user.fiat_cents / 100).toFixed(2),
+			linkedBankAccountId: user.column_account_id,
+			privateWalletId: user.unlink_wallet_id,
+		},
+		linkedBanking:
+			liveDetails === null
+				? null
+				: {
+						entityId: liveDetails.entity_id,
+						bankAccountId: liveDetails.bank_account_id,
+						accountNumberId: liveDetails.account_number_id,
+						seededAmountCents: liveDetails.seeded_amount_cents,
+				  },
+	})
+})
+
 app.get('/demo/terminal', async (c) => {
-	return c.html(renderTerminalDemoUi())
+	const initialAdminToken = c.req.query('adminToken') ?? undefined
+	const initialUserId = c.req.query('userId') ?? undefined
+	const autoplay = c.req.query('autoplay') === '1'
+
+	return c.html(renderTerminalDemoUi({
+		initialAdminToken,
+		initialUserId,
+		autoplay,
+	}))
 })
 
 app.post('/admin/reset', async (c) => {
@@ -2236,7 +2676,8 @@ app.get('/burn-intents/:id', async (c) => {
 })
 
 app.get('/demo/paid', async (c) => {
-	await ensureReady(c, 'demo-user')
+	await ensureSchema(c.env.DB)
+	await ensureSystemState(c.env.DB)
 	const paymentSignatureHeader = c.req.header('PAYMENT-SIGNATURE')
 	const challengeIdHeader = c.req.header('x-pusd-challenge-id')
 	const receiptIdHeader = c.req.header('x-pusd-payment-receipt')
@@ -2513,7 +2954,8 @@ app.post('/admin/reconcile', async (c) => {
 	if (authError !== null) {
 		return authError
 	}
-	await ensureReady(c, 'demo-user')
+	await ensureSchema(c.env.DB)
+	await ensureSystemState(c.env.DB)
 	const system = await loadSystem(c.env.DB)
 	const healthy = system.reserve_cents >= system.total_supply_cents
 
