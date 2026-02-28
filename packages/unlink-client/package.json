@@ -1,0 +1,38 @@
+{
+	"name": "@repo/unlink-client",
+	"version": "0.1.0",
+	"private": true,
+	"sideEffects": false,
+	"type": "module",
+	"exports": {
+		".": {
+			"import": "./src/index.ts",
+			"require": {
+				"require": "./dist/index.cjs",
+				"types": "./dist/index.d.ts"
+			}
+		},
+		"./sdk": {
+			"import": "./src/sdk.ts",
+			"require": {
+				"require": "./dist/sdk.cjs",
+				"types": "./dist/sdk.d.ts"
+			}
+		}
+	},
+	"scripts": {
+		"build": "runx build lib index.ts sdk.ts -d src -f cjs --platform node",
+		"check:lint": "run-eslint",
+		"check:types": "run-tsc",
+		"test": "run-vitest"
+	},
+	"dependencies": {
+		"@unlink-xyz/node": "0.1.8",
+		"viem": "2.37.5"
+	},
+	"devDependencies": {
+		"@repo/tools": "workspace:*",
+		"@types/node": "22.15.27",
+		"vitest": "3.2.4"
+	}
+}

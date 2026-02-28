@@ -1,0 +1,27 @@
+{
+	"name": "@repo/column-client",
+	"version": "0.1.0",
+	"private": true,
+	"sideEffects": false,
+	"type": "module",
+	"exports": {
+		".": {
+			"import": "./src/index.ts",
+			"require": {
+				"require": "./dist/index.cjs",
+				"types": "./dist/index.d.ts"
+			}
+		}
+	},
+	"scripts": {
+		"build": "runx build lib index.ts -d src -f cjs --platform node",
+		"check:lint": "run-eslint",
+		"check:types": "run-tsc",
+		"test": "run-vitest"
+	},
+	"devDependencies": {
+		"@types/node": "22.15.27",
+		"@repo/tools": "workspace:*",
+		"vitest": "3.2.4"
+	}
+}

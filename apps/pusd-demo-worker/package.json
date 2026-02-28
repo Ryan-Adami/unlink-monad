@@ -1,0 +1,36 @@
+{
+	"name": "pusd-demo-worker",
+	"version": "0.1.0",
+	"private": true,
+	"sideEffects": false,
+	"type": "module",
+	"scripts": {
+		"build:wrangler": "run-wrangler-build",
+		"check:lint": "run-eslint",
+		"check:types": "run-tsc",
+		"check:workers-types": "run-wrangler-types --check",
+		"dev:unlink-container": "node --experimental-strip-types ./container/server.ts",
+		"deploy": "run-wrangler-deploy",
+		"dev": "run-wrangler-dev",
+		"fix:workers-types": "run-wrangler-types",
+		"test": "run-vitest"
+	},
+	"dependencies": {
+		"@cloudflare/containers": "0.1.1",
+		"@repo/column-client": "workspace:*",
+		"@repo/hono-helpers": "workspace:*",
+		"@repo/monad-client": "workspace:*",
+		"@repo/pusd-domain": "workspace:*",
+		"@repo/unlink-client": "workspace:*",
+		"hono": "4.9.11"
+	},
+	"devDependencies": {
+		"@cloudflare/vitest-pool-workers": "0.12.6",
+		"@repo/eslint-config": "workspace:*",
+		"@repo/tools": "workspace:*",
+		"@repo/typescript-config": "workspace:*",
+		"@types/node": "22.15.27",
+		"vitest": "3.2.4",
+		"wrangler": "4.60.0"
+	}
+}
