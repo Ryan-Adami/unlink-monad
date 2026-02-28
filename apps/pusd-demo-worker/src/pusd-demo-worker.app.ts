@@ -1242,6 +1242,701 @@ async function parseJson<T>(request: Request): Promise<T> {
 	return (await request.json()) as T
 }
 
+function renderTerminalDemoUi(): string {
+	return `<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>PUSD Demo Console</title>
+		<style>
+			:root {
+				--bg: #07110d;
+				--bg-soft: #0d1914;
+				--panel: rgba(8, 20, 15, 0.88);
+				--line: rgba(81, 255, 179, 0.18);
+				--text: #d7ffe8;
+				--muted: #81d8a7;
+				--green: #51ffb3;
+				--amber: #ffd86b;
+				--red: #ff7b7b;
+			}
+
+			* {
+				box-sizing: border-box;
+			}
+
+			body {
+				margin: 0;
+				min-height: 100vh;
+				font-family: "IBM Plex Mono", "JetBrains Mono", "SFMono-Regular", ui-monospace, monospace;
+				color: var(--text);
+				background:
+					radial-gradient(circle at top right, rgba(81, 255, 179, 0.08), transparent 32%),
+					radial-gradient(circle at bottom left, rgba(255, 216, 107, 0.07), transparent 28%),
+					linear-gradient(180deg, #040807 0%, #07110d 45%, #030705 100%);
+			}
+
+			body::before {
+				content: "";
+				position: fixed;
+				inset: 0;
+				pointer-events: none;
+				background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+				background-size: 100% 4px;
+				opacity: 0.08;
+			}
+
+			.shell {
+				max-width: 1320px;
+				margin: 0 auto;
+				padding: 24px;
+			}
+
+			.header {
+				display: grid;
+				grid-template-columns: 1.3fr 1fr;
+				gap: 18px;
+				margin-bottom: 18px;
+			}
+
+			.panel {
+				position: relative;
+				border: 1px solid var(--line);
+				background: var(--panel);
+				border-radius: 16px;
+				box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+				overflow: hidden;
+			}
+
+			.panel::after {
+				content: "";
+				position: absolute;
+				inset: 0;
+				pointer-events: none;
+				border-top: 1px solid rgba(255, 255, 255, 0.03);
+				background: linear-gradient(180deg, rgba(81, 255, 179, 0.04), transparent 18%);
+			}
+
+			.titlebar {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				padding: 12px 16px;
+				border-bottom: 1px solid var(--line);
+				background: rgba(255, 255, 255, 0.02);
+				font-size: 12px;
+				text-transform: uppercase;
+				letter-spacing: 0.12em;
+			}
+
+			.dots {
+				display: inline-flex;
+				gap: 8px;
+			}
+
+			.dot {
+				width: 10px;
+				height: 10px;
+				border-radius: 50%;
+				background: rgba(255, 255, 255, 0.18);
+			}
+
+			.dot.green {
+				background: var(--green);
+			}
+
+			.dot.amber {
+				background: var(--amber);
+			}
+
+			.content {
+				padding: 18px;
+			}
+
+			h1, h2, p {
+				margin: 0;
+			}
+
+			.hero {
+				display: grid;
+				gap: 12px;
+			}
+
+			.kicker {
+				color: var(--green);
+				font-size: 12px;
+				text-transform: uppercase;
+				letter-spacing: 0.18em;
+			}
+
+			h1 {
+				font-size: clamp(32px, 5vw, 58px);
+				line-height: 0.92;
+				letter-spacing: -0.03em;
+			}
+
+			.subtle {
+				color: var(--muted);
+				font-size: 14px;
+				line-height: 1.6;
+				max-width: 60ch;
+			}
+
+			.metrics {
+				display: grid;
+				grid-template-columns: repeat(3, minmax(0, 1fr));
+				gap: 12px;
+				margin-top: 8px;
+			}
+
+			.metric {
+				padding: 12px;
+				border: 1px solid var(--line);
+				border-radius: 12px;
+				background: rgba(255, 255, 255, 0.015);
+			}
+
+			.metric .label {
+				display: block;
+				color: var(--muted);
+				font-size: 11px;
+				text-transform: uppercase;
+				letter-spacing: 0.12em;
+				margin-bottom: 8px;
+			}
+
+			.metric .value {
+				font-size: 18px;
+				color: var(--text);
+			}
+
+			.layout {
+				display: grid;
+				grid-template-columns: 420px minmax(0, 1fr);
+				gap: 18px;
+			}
+
+			.controls {
+				display: grid;
+				gap: 16px;
+			}
+
+			.stack {
+				display: grid;
+				gap: 12px;
+			}
+
+			label {
+				display: grid;
+				gap: 8px;
+				font-size: 12px;
+				text-transform: uppercase;
+				letter-spacing: 0.12em;
+				color: var(--muted);
+			}
+
+			input {
+				width: 100%;
+				padding: 12px 14px;
+				border-radius: 10px;
+				border: 1px solid var(--line);
+				background: rgba(0, 0, 0, 0.3);
+				color: var(--text);
+				font: inherit;
+			}
+
+			button {
+				appearance: none;
+				border: 1px solid var(--line);
+				border-radius: 10px;
+				padding: 12px 14px;
+				background: rgba(81, 255, 179, 0.05);
+				color: var(--text);
+				font: inherit;
+				text-align: left;
+				cursor: pointer;
+				transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+			}
+
+			button:hover {
+				transform: translateY(-1px);
+				background: rgba(81, 255, 179, 0.08);
+				border-color: rgba(81, 255, 179, 0.32);
+			}
+
+			button.primary {
+				background: linear-gradient(135deg, rgba(81, 255, 179, 0.16), rgba(255, 216, 107, 0.08));
+			}
+
+			button:disabled {
+				opacity: 0.5;
+				cursor: not-allowed;
+				transform: none;
+			}
+
+			.button-grid {
+				display: grid;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				gap: 10px;
+			}
+
+			.legend {
+				font-size: 12px;
+				line-height: 1.6;
+				color: var(--muted);
+			}
+
+			.terminal {
+				min-height: 640px;
+				display: grid;
+				grid-template-rows: auto 1fr;
+			}
+
+			.log {
+				padding: 16px 18px 24px;
+				overflow: auto;
+				font-size: 13px;
+				line-height: 1.7;
+				white-space: pre-wrap;
+				word-break: break-word;
+			}
+
+			.line {
+				display: block;
+				margin-bottom: 8px;
+			}
+
+			.line.info {
+				color: var(--text);
+			}
+
+			.line.ok {
+				color: var(--green);
+			}
+
+			.line.warn {
+				color: var(--amber);
+			}
+
+			.line.err {
+				color: var(--red);
+			}
+
+			.cursor {
+				display: inline-block;
+				width: 10px;
+				height: 1.1em;
+				background: var(--green);
+				vertical-align: text-bottom;
+				margin-left: 6px;
+				animation: blink 1s steps(2, start) infinite;
+			}
+
+			@keyframes blink {
+				to { opacity: 0; }
+			}
+
+			.note {
+				margin-top: 12px;
+				padding-top: 12px;
+				border-top: 1px dashed var(--line);
+				color: var(--muted);
+				font-size: 12px;
+				line-height: 1.6;
+			}
+
+			@media (max-width: 980px) {
+				.header,
+				.layout,
+				.metrics,
+				.button-grid {
+					grid-template-columns: 1fr;
+				}
+
+				.terminal {
+					min-height: 480px;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div class="shell">
+			<section class="header">
+				<div class="panel">
+					<div class="titlebar">
+						<span>PUSD Demo Console</span>
+						<span class="dots">
+							<span class="dot"></span>
+							<span class="dot amber"></span>
+							<span class="dot green"></span>
+						</span>
+					</div>
+					<div class="content hero">
+						<div class="kicker">Private Fiat Rails -> Private Token Rail -> Machine Payment</div>
+						<h1>PUSD / Unlink / Monad</h1>
+						<p class="subtle">
+							A single-screen command center for the judge demo: real Column book transfers, real Monad mint and burn, real private Unlink movement, and an x402-style machine-payment flow.
+						</p>
+						<div class="metrics">
+							<div class="metric">
+								<span class="label">User</span>
+								<span class="value" id="metric-user">judge-demo</span>
+							</div>
+							<div class="metric">
+								<span class="label">Chain</span>
+								<span class="value">${MONAD_TESTNET_CHAIN_ID}</span>
+							</div>
+							<div class="metric">
+								<span class="label">Token</span>
+								<span class="value">${TOKEN_SYMBOL} / ${TOKEN_STANDARD}</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="panel">
+					<div class="titlebar">
+						<span>Judge Narrative</span>
+						<span>Ordered Flow</span>
+					</div>
+					<div class="content stack">
+						<p class="legend">1. Prove the system is live. 2. Prove the banking rail is real. 3. Onramp into private balance. 4. Offramp back to fiat. 5. Show the agent payment loop.</p>
+						<p class="legend">Use <strong>Run Guided Demo</strong> for a single clean sequence, or step through individual actions if you want to pause and explain each tx hash.</p>
+						<div class="note">
+							Public route: <code>/demo/public</code><br />
+							Protected routes require <code>${DEMO_ADMIN_AUTH_HEADER}</code>.<br />
+							x402 settlement is explicitly labeled <code>demo-ledger</code>.
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<section class="layout">
+				<div class="controls">
+					<div class="panel">
+						<div class="titlebar">
+							<span>Session</span>
+							<span>Local Or Hosted</span>
+						</div>
+						<div class="content stack">
+							<label>
+								Admin Token
+								<input id="adminToken" type="password" placeholder="Paste demo admin token" />
+							</label>
+							<label>
+								Demo User
+								<input id="userId" type="text" value="judge-demo" />
+							</label>
+							<div class="button-grid">
+								<button class="primary" id="guidedDemo">Run Guided Demo</button>
+								<button id="showPublic">Show Public Metadata</button>
+								<button id="resetState">Reset State</button>
+								<button id="columnSmoke">Column Smoke</button>
+								<button id="unlinkSmoke">Unlink Smoke</button>
+								<button id="mintFunds">Mint 321c</button>
+								<button id="showBalances">Balances</button>
+								<button id="burnFunds">Burn 321c</button>
+								<button id="runX402">Run x402 Flow</button>
+							</div>
+							<div class="note">
+								The token stays in browser memory only. This page stores it in localStorage for convenience on the same browser, so you do not need to re-paste during rehearsals.
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="panel terminal">
+					<div class="titlebar">
+						<span>Live Event Stream</span>
+						<span><span id="statusText">Ready</span><span class="cursor"></span></span>
+					</div>
+					<div class="log" id="log"></div>
+				</div>
+			</section>
+		</div>
+
+		<script>
+			const adminTokenInput = document.getElementById('adminToken')
+			const userIdInput = document.getElementById('userId')
+			const log = document.getElementById('log')
+			const statusText = document.getElementById('statusText')
+			const metricUser = document.getElementById('metric-user')
+
+			const state = {
+				busy: false,
+				adminToken: localStorage.getItem('pusd-demo-admin-token') ?? '',
+			}
+
+			if (state.adminToken !== '') {
+				adminTokenInput.value = state.adminToken
+			}
+
+			adminTokenInput.addEventListener('input', () => {
+				state.adminToken = adminTokenInput.value.trim()
+				localStorage.setItem('pusd-demo-admin-token', state.adminToken)
+			})
+
+			userIdInput.addEventListener('input', () => {
+				metricUser.textContent = userIdInput.value.trim() || 'judge-demo'
+			})
+
+			function setStatus(value) {
+				statusText.textContent = value
+			}
+
+			function writeLine(kind, message, data) {
+				const line = document.createElement('span')
+				line.className = 'line ' + kind
+				let text = message
+				if (data !== undefined) {
+					text += ' ' + JSON.stringify(data, null, 2)
+				}
+				line.textContent = '> ' + text
+				log.appendChild(line)
+				log.scrollTop = log.scrollHeight
+			}
+
+			function sleep(ms) {
+				return new Promise((resolve) => setTimeout(resolve, ms))
+			}
+
+			function getUserId() {
+				return userIdInput.value.trim() || 'judge-demo'
+			}
+
+			function getAdminToken() {
+				const token = adminTokenInput.value.trim()
+				if (token === '') {
+					throw new Error('Admin token required for protected routes')
+				}
+				return token
+			}
+
+			async function parseJson(response) {
+				const text = await response.text()
+				if (text === '') {
+					return null
+				}
+				try {
+					return JSON.parse(text)
+				} catch {
+					return text
+				}
+			}
+
+			function encodeBase64Json(value) {
+				return btoa(unescape(encodeURIComponent(JSON.stringify(value))))
+			}
+
+			function decodeBase64Json(value) {
+				return JSON.parse(decodeURIComponent(escape(atob(value))))
+			}
+
+			async function request(path, options = {}, requiresAuth = false) {
+				const headers = new Headers(options.headers || {})
+				if (requiresAuth) {
+					headers.set('${DEMO_ADMIN_AUTH_HEADER}', getAdminToken())
+				}
+
+				const response = await fetch(path, {
+					...options,
+					headers,
+				})
+				const body = await parseJson(response)
+				if (!response.ok) {
+					throw new Error(typeof body === 'string' ? body : JSON.stringify(body))
+				}
+				return { response, body }
+			}
+
+			async function pollIntent(pollPath, label) {
+				for (let attempt = 1; attempt <= 8; attempt += 1) {
+					writeLine('info', label + ' poll #' + attempt)
+					const { body } = await request(pollPath, {}, true)
+					const intent = body.intent
+					writeLine('info', label + ' status', {
+						status: intent.status,
+						columnTransferId: intent.column_transfer_id,
+						txHash: intent.tx_hash,
+						unlinkOperationId: intent.unlink_operation_id,
+					})
+					if (['completed', 'failed', 'manual_review'].includes(intent.status)) {
+						return intent
+					}
+					await sleep(1500)
+				}
+				throw new Error(label + ' did not reach a terminal state in time')
+			}
+
+			async function withBusy(label, fn) {
+				if (state.busy) {
+					return
+				}
+				state.busy = true
+				setStatus(label)
+				try {
+					await fn()
+					setStatus('Ready')
+				} catch (error) {
+					writeLine('err', label + ' failed', {
+						error: error instanceof Error ? error.message : String(error),
+					})
+					setStatus('Failed')
+				} finally {
+					state.busy = false
+				}
+			}
+
+			async function showPublic() {
+				const { body } = await request('/demo/public')
+				writeLine('ok', 'Public metadata', body)
+			}
+
+			async function resetState() {
+				const { body } = await request('/admin/reset', {
+					method: 'POST',
+				}, true)
+				writeLine('ok', 'State reset', body)
+			}
+
+			async function runColumnSmoke() {
+				const { body } = await request('/admin/live-column-smoke', {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({
+						fundingAmountCents: 1000,
+						transferAmountCents: 100,
+					}),
+				}, true)
+				writeLine('ok', 'Column smoke completed', body.result)
+			}
+
+			async function runUnlinkSmoke() {
+				const { body } = await request('/admin/unlink-smoke', {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({
+						userId: getUserId(),
+					}),
+				}, true)
+				writeLine('ok', 'Unlink container healthy', body.result)
+			}
+
+			async function runMint() {
+				const { body } = await request('/mint-intents', {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({
+						userId: getUserId(),
+						amountCents: 321,
+					}),
+				}, true)
+				writeLine('info', 'Mint intent created', body.intent)
+				const intent = body.async ? await pollIntent(body.pollPath, 'Mint') : body.intent
+				writeLine('ok', 'Mint completed', intent)
+			}
+
+			async function showBalances() {
+				const { body } = await request('/balances?userId=' + encodeURIComponent(getUserId()), {}, true)
+				writeLine('ok', 'Balance snapshot', body)
+			}
+
+			async function runBurn() {
+				const { body } = await request('/burn-intents', {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({
+						userId: getUserId(),
+						amountCents: 321,
+					}),
+				}, true)
+				writeLine('info', 'Burn intent created', body.intent)
+				const intent = body.async ? await pollIntent(body.pollPath, 'Burn') : body.intent
+				writeLine('ok', 'Burn completed', intent)
+			}
+
+			async function runX402() {
+				const payResponse = await fetch('/demo/paid')
+				if (payResponse.status !== 402) {
+					throw new Error('Expected 402 from /demo/paid')
+				}
+				const challengeHeader = payResponse.headers.get('PAYMENT-REQUIRED')
+				if (!challengeHeader) {
+					throw new Error('PAYMENT-REQUIRED header missing')
+				}
+				const challenge = decodeBase64Json(challengeHeader)
+				writeLine('warn', 'x402 challenge issued', challenge)
+
+				await request('/x402/ensure-funds', {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({
+						userId: getUserId(),
+						amountCents: challenge.amountCents,
+					}),
+				}, true)
+				writeLine('ok', 'Shared payer funded', {
+					amountCents: challenge.amountCents,
+				})
+
+				const { body: settleBody } = await request('/facilitator/settle', {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({
+						challengeId: challenge.challengeId,
+					}),
+				}, true)
+				writeLine('ok', 'Challenge settled', settleBody)
+
+				const signature = encodeBase64Json({
+					challengeId: challenge.challengeId,
+					receiptId: settleBody.receiptId,
+				})
+				const paidResponse = await fetch('/demo/paid', {
+					headers: {
+						'PAYMENT-SIGNATURE': signature,
+					},
+				})
+				if (!paidResponse.ok) {
+					throw new Error(await paidResponse.text())
+				}
+				const paymentResponse = decodeBase64Json(paidResponse.headers.get('PAYMENT-RESPONSE'))
+				const paidBody = await paidResponse.json()
+				writeLine('ok', 'x402 resource delivered', {
+					paidBody,
+					paymentResponse,
+				})
+			}
+
+			async function runGuidedDemo() {
+				writeLine('info', '--- Guided demo start ---')
+				await showPublic()
+				await resetState()
+				await runColumnSmoke()
+				await runUnlinkSmoke()
+				await runMint()
+				await showBalances()
+				await runBurn()
+				await showBalances()
+				await runX402()
+				writeLine('ok', '--- Guided demo complete ---')
+			}
+
+			document.getElementById('showPublic').addEventListener('click', () => withBusy('Public Metadata', showPublic))
+			document.getElementById('resetState').addEventListener('click', () => withBusy('Reset State', resetState))
+			document.getElementById('columnSmoke').addEventListener('click', () => withBusy('Column Smoke', runColumnSmoke))
+			document.getElementById('unlinkSmoke').addEventListener('click', () => withBusy('Unlink Smoke', runUnlinkSmoke))
+			document.getElementById('mintFunds').addEventListener('click', () => withBusy('Mint', runMint))
+			document.getElementById('showBalances').addEventListener('click', () => withBusy('Balances', showBalances))
+			document.getElementById('burnFunds').addEventListener('click', () => withBusy('Burn', runBurn))
+			document.getElementById('runX402').addEventListener('click', () => withBusy('x402', runX402))
+			document.getElementById('guidedDemo').addEventListener('click', () => withBusy('Guided Demo', runGuidedDemo))
+
+			writeLine('ok', 'Console ready. Paste the admin token and run the guided sequence.')
+		</script>
+	</body>
+</html>`
+}
+
 app.get('/demo/public', async (c) => {
 	return c.json({
 		name: 'PUSD Hackathon Demo Worker',
@@ -1252,6 +1947,10 @@ app.get('/demo/public', async (c) => {
 			standard: TOKEN_STANDARD,
 		},
 	})
+})
+
+app.get('/demo/terminal', async (c) => {
+	return c.html(renderTerminalDemoUi())
 })
 
 app.post('/admin/reset', async (c) => {
