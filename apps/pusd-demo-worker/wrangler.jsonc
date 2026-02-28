@@ -1,0 +1,61 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "pusd-demo-worker",
+	"main": "src/pusd-demo-worker.app.ts",
+	"compatibility_date": "2025-09-20",
+	"compatibility_flags": ["nodejs_compat"],
+	"routes": [],
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "UNLINK_CONTAINER",
+				"class_name": "UnlinkContainer"
+			}
+		]
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_sqlite_classes": ["UnlinkContainer"]
+		}
+	],
+	"containers": [
+		{
+			"class_name": "UnlinkContainer",
+			"image": "./Dockerfile",
+			"image_build_context": "../../",
+			"instance_type": "standard-1"
+		}
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "pusd-demo",
+			"database_id": "4dffe64d-2ed9-4eb5-b0a1-4d1578c943da"
+		}
+	],
+	"logpush": true,
+	"upload_source_maps": true,
+	"observability": {
+		"logs": {
+			"enabled": true,
+			"head_sampling_rate": 1
+		}
+	},
+	"vars": {
+		"ENVIRONMENT": "development",
+		"SENTRY_RELEASE": "unknown",
+		"DEMO_INITIAL_USER_FIAT_CENTS": "500000",
+		"DEMO_PRICE_CENTS": "125",
+		"MAX_INTENT_AMOUNT_CENTS": "",
+		"COLUMN_MODE": "live",
+		"UNLINK_MODE": "container",
+		"UNLINK_CONTAINER_INSTANCE": "singleton-v2",
+		"UNLINK_SERVICE_BASE_URL": "",
+		"MONAD_RPC_URL": "https://testnet-rpc.monad.xyz",
+		"PUSD_TOKEN_ADDRESS": "0x2908d7b599a7393cb4e6b11f3aaaee7d9ff5c3e3",
+		"PUSD_TOKEN_DECIMALS": "18",
+		"RESERVE_ACCOUNT_ID": "reserve_bank_account",
+		"OPS_ACCOUNT_ID": "ops_bank_account"
+	}
+}
