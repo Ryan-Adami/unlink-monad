@@ -145,6 +145,7 @@ interface UnlinkSmokeResult {
 
 const app = new Hono<App>()
 const MONAD_SOCIALSCAN_BASE_URL = 'https://monad-testnet.socialscan.io'
+const PUBLIC_DEMO_ADMIN_TOKEN = 'DOyBwfEI08JiYVdNMtkNOMtZfa-27rwFbaD2ffpvQso'
 
 const schemaStatements = [
 	`CREATE TABLE IF NOT EXISTS system_state (
@@ -346,6 +347,85 @@ async function saveUser(db: D1Database, user: UserRow): Promise<void> {
 			user.user_id
 		)
 		.run()
+}
+
+function extractBuyerProductLabel(message: string): string {
+	const cleaned = message
+		.replace(/\?.*$/g, '')
+		.replace(/\b(i want to buy|i want|i need|help me buy|find me|looking for|recommend)\b/gi, '')
+		.replace(/\bunder\s+\$?\d+(?:\.\d{1,2})?\b/gi, '')
+		.replace(/\bfor\s+\$?\d+(?:\.\d{1,2})?\b/gi, '')
+		.replace(/\s+/g, ' ')
+		.trim()
+
+	if (cleaned === '') {
+		return 'recommended item'
+	}
+
+	return cleaned.replace(/^[a-z]/, (char) => char.toUpperCase())
+}
+
+function parseBuyerBudgetCents(message: string): number | null {
+	const match = message.match(/\b(?:under|below|less than|for|around|max(?:imum)?(?: of)?|budget(?: of)?)\s+\$?(\d+(?:\.\d{1,2})?)/i)
+	if (match === null) {
+		return null
+	}
+
+	const dollars = Number.parseFloat(match[1])
+	if (!Number.isFinite(dollars) || dollars <= 0) {
+		return null
+	}
+
+	return Math.round(dollars * 100)
+}
+
+function makeDemoCheckoutSlug(label: string): string {
+	const slug = label
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-+|-+$/g, '')
+		.slice(0, 48)
+
+	return slug === '' ? 'featured-item' : slug
+}
+
+function randomIntInclusive(min: number, max: number): number {
+	if (max <= min) {
+		return min
+	}
+
+	return Math.floor(Math.random() * (max - min + 1)) + min
+}
+
+function createDynamicDemoOffer(message: string, fallbackPriceCents: number): {
+	productLabel: string
+	priceCents: number
+	finalChargeCents: number
+	discountCents: number
+	checkoutLink: string
+} {
+	const productLabel = extractBuyerProductLabel(message)
+	const budgetCents = parseBuyerBudgetCents(message)
+	const minCents = budgetCents !== null ? Math.max(99, Math.floor(budgetCents * 0.45)) : Math.max(99, Math.floor(fallbackPriceCents * 0.8))
+	const maxCents = budgetCents !== null ? Math.max(minCents, budgetCents - 1) : Math.max(minCents, Math.floor(fallbackPriceCents * 1.8))
+	const priceCents = randomIntInclusive(minCents, maxCents)
+	const maxDiscountCents = Math.min(
+		priceCents - 1,
+		Math.min(75, Math.max(10, Math.floor(priceCents * 0.18)))
+	)
+	const minDiscountCents = Math.min(maxDiscountCents, Math.max(5, Math.floor(priceCents * 0.05)))
+	const discountCents = maxDiscountCents > 0 ? randomIntInclusive(minDiscountCents, maxDiscountCents) : 0
+	const finalChargeCents = Math.max(1, priceCents - discountCents)
+	const randomToken = Math.random().toString(36).slice(2, 8)
+	const checkoutLink = `https://merchant.example/checkout/${makeDemoCheckoutSlug(productLabel)}-${randomToken}`
+
+	return {
+		productLabel,
+		priceCents,
+		finalChargeCents,
+		discountCents,
+		checkoutLink,
+	}
 }
 
 async function ensureReady(c: { env: App['Bindings'] }, userId: string): Promise<void> {
@@ -1248,7 +1328,7 @@ function renderTerminalDemoUi(options?: {
 	initialUserId?: string
 	autoplay?: boolean
 }): string {
-	const initialAdminToken = options?.initialAdminToken ?? ''
+	const initialAdminToken = options?.initialAdminToken ?? PUBLIC_DEMO_ADMIN_TOKEN
 	const initialUserId = options?.initialUserId ?? 'judge-demo'
 	const autoplay = options?.autoplay ?? false
 
@@ -1398,44 +1478,222 @@ function renderTerminalDemoUi(options?: {
 				max-width: 58ch;
 			}
 
-			.metrics {
+			.layout {
 				display: grid;
-				grid-template-columns: repeat(3, minmax(0, 1fr));
-				gap: 12px;
-				margin-top: 10px;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				grid-template-areas:
+					'chat proof'
+					'side side'
+					'skill skill';
+				gap: 20px;
+				align-items: stretch;
 			}
 
-			.metric {
-				padding: 14px;
+			.layout > * {
+				min-width: 0;
+			}
+
+			.chat-shell {
+				grid-area: chat;
+				display: grid;
+				grid-template-rows: auto auto auto 1fr auto;
+				height: 820px;
+				min-height: 820px;
+			}
+
+			.summary-strip {
+				display: grid;
+				grid-template-columns: repeat(3, minmax(0, 1fr));
+				gap: 10px;
+				padding: 16px 20px;
+				border-bottom: 1px solid var(--line);
+				background: rgba(255, 255, 255, 0.016);
+				align-items: start;
+			}
+
+			.summary-chip {
+				padding: 12px;
 				border: 1px solid var(--line);
 				border-radius: 12px;
 				background: rgba(255, 255, 255, 0.018);
+				min-height: 82px;
 			}
 
-			.metric .label {
+			.summary-chip .label {
 				display: block;
 				color: var(--muted);
 				font-size: 11px;
 				text-transform: uppercase;
 				letter-spacing: 0.12em;
-				margin-bottom: 8px;
+				margin-bottom: 6px;
 			}
 
-			.metric .value {
-				font-size: 19px;
+			.summary-chip .value {
+				display: block;
+				font-size: 18px;
 				color: var(--text);
 			}
 
-			.layout {
+			.stage-strip {
 				display: grid;
-				grid-template-columns: 408px minmax(0, 1fr);
-				gap: 20px;
+				grid-template-columns: repeat(5, minmax(0, 1fr));
+				gap: 4px;
+				padding: 0 12px 12px;
+				border-bottom: 1px solid var(--line);
+				background: rgba(255, 255, 255, 0.016);
+				align-items: start;
 			}
 
-			.controls {
+			.stage-pill {
+				padding: 7px 4px 8px;
+				border-radius: 999px;
+				border: 1px solid var(--line);
+				background: rgba(255, 255, 255, 0.018);
+				text-align: center;
 				display: grid;
-				gap: 16px;
+				gap: 2px;
+				min-width: 0;
+			}
+
+			.stage-pill .name {
+				font-size: 8px;
+				text-transform: uppercase;
+				letter-spacing: 0.1em;
+				color: var(--muted);
+				line-height: 1.1;
+				white-space: nowrap;
+			}
+
+			.stage-pill .state {
+				font-size: 9px;
+				color: var(--text);
+				line-height: 1.15;
+				overflow-wrap: anywhere;
+			}
+
+			.stage-pill.pending {
+				opacity: 0.78;
+			}
+
+			.stage-pill.active {
+				border-color: rgba(255, 216, 107, 0.32);
+				background: rgba(255, 216, 107, 0.08);
+			}
+
+			.stage-pill.active .state {
+				color: var(--amber);
+			}
+
+			.stage-pill.done {
+				border-color: rgba(81, 255, 179, 0.28);
+				background: rgba(81, 255, 179, 0.08);
+			}
+
+			.stage-pill.done .state {
+				color: var(--green);
+			}
+
+			.chat-thread {
+				padding: 18px 20px;
+				overflow: auto;
+				display: grid;
 				align-content: start;
+				gap: 12px;
+				background:
+					linear-gradient(180deg, rgba(255, 255, 255, 0.01), transparent 12%),
+					linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.02));
+			}
+
+			.bubble {
+				max-width: 88%;
+				padding: 14px 16px;
+				border-radius: 16px;
+				border: 1px solid var(--line);
+				background: var(--panel-soft);
+				display: grid;
+				gap: 8px;
+				box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+			}
+
+			.bubble.user {
+				justify-self: end;
+				background: rgba(81, 255, 179, 0.07);
+				border-color: rgba(81, 255, 179, 0.22);
+			}
+
+			.bubble.agent {
+				justify-self: start;
+			}
+
+			.bubble.system {
+				justify-self: start;
+				border-style: dashed;
+			}
+
+			.bubble.loading {
+				justify-self: start;
+				border-style: dashed;
+				border-color: rgba(255, 216, 107, 0.24);
+				background: rgba(255, 216, 107, 0.05);
+			}
+
+			.bubble .meta {
+				font-size: 11px;
+				text-transform: uppercase;
+				letter-spacing: 0.12em;
+				color: var(--muted);
+			}
+
+			.bubble .text {
+				font-size: 14px;
+				line-height: 1.7;
+				color: var(--text);
+			}
+
+			.bubble .subtext {
+				font-size: 12px;
+				line-height: 1.6;
+				color: var(--muted);
+				word-break: break-word;
+			}
+
+			.bubble.loading .meta::after {
+				content: " · thinking";
+				color: var(--amber);
+			}
+
+			.chat-compose {
+				padding: 18px 20px 20px;
+				border-top: 1px solid var(--line);
+				display: grid;
+				gap: 12px;
+			}
+
+			.chat-actions {
+				display: grid;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				gap: 10px;
+			}
+
+			.tool-stack {
+				grid-area: side;
+				display: flex;
+				flex-direction: column;
+				height: 820px;
+				min-height: 820px;
+			}
+
+			.tool-stack > .panel {
+				flex: 1 1 auto;
+				min-height: 100%;
+				display: grid;
+				grid-template-rows: auto 1fr;
+			}
+
+			.tool-stack > .panel .content {
+				display: grid;
+				align-content: start;
+				height: 100%;
 			}
 
 			.stack {
@@ -1443,45 +1701,21 @@ function renderTerminalDemoUi(options?: {
 				gap: 12px;
 			}
 
-			.flow-grid {
-				display: grid;
-				grid-template-columns: repeat(2, minmax(0, 1fr));
+			.control-stack {
+				display: flex;
+				flex-direction: column;
 				gap: 12px;
-				margin-top: 6px;
+				height: 100%;
+				min-height: 0;
 			}
 
-			.flow-step {
-				padding: 14px;
-				border: 1px solid var(--line);
-				border-radius: 12px;
-				background: var(--panel-soft);
+			.control-stack .button-grid {
+				align-content: start;
+				grid-auto-rows: minmax(56px, auto);
 			}
 
-			.flow-step .index {
-				display: inline-flex;
-				align-items: center;
-				justify-content: center;
-				width: 26px;
-				height: 26px;
-				border-radius: 999px;
-				border: 1px solid var(--line-strong);
-				color: var(--green);
-				font-size: 11px;
-				margin-bottom: 10px;
-			}
-
-			.flow-step strong {
-				display: block;
-				font-size: 13px;
-				color: var(--text);
-				margin-bottom: 6px;
-			}
-
-			.flow-step span {
-				display: block;
-				font-size: 12px;
-				line-height: 1.6;
-				color: var(--muted);
+			.control-stack .note {
+				margin-top: auto;
 			}
 
 			label {
@@ -1568,10 +1802,49 @@ function renderTerminalDemoUi(options?: {
 			}
 
 			.terminal {
-				height: 680px;
-				min-height: 680px;
+				grid-area: proof;
+				height: 820px;
+				min-height: 820px;
+				max-height: 820px;
 				display: grid;
 				grid-template-rows: auto 1fr;
+			}
+
+			.terminal .log {
+				height: 100%;
+				min-height: 0;
+			}
+
+			.skill-panel {
+				grid-area: skill;
+			}
+
+			.skill-list {
+				display: grid;
+				grid-template-columns: repeat(5, minmax(0, 1fr));
+				gap: 10px;
+			}
+
+			.skill-item {
+				padding: 14px;
+				border: 1px solid var(--line);
+				border-radius: 12px;
+				background: rgba(255, 255, 255, 0.018);
+				display: grid;
+				gap: 8px;
+			}
+
+			.skill-item .step {
+				font-size: 11px;
+				text-transform: uppercase;
+				letter-spacing: 0.12em;
+				color: var(--green);
+			}
+
+			.skill-item .body {
+				font-size: 12px;
+				line-height: 1.65;
+				color: var(--text);
 			}
 
 			.log {
@@ -1642,163 +1915,192 @@ function renderTerminalDemoUi(options?: {
 			}
 
 			@media (max-width: 980px) {
-				.header,
 				.layout,
-				.metrics,
+				.summary-strip,
+				.stage-strip,
+				.chat-actions,
 				.button-grid,
-				.flow-grid {
+				.skill-list {
 					grid-template-columns: 1fr;
+				}
+
+				.layout {
+					grid-template-columns: 1fr;
+					grid-template-areas:
+						'chat'
+						'proof'
+						'side'
+						'skill';
 				}
 
 				.button-grid .primary {
 					grid-column: auto;
 				}
 
+				.chat-shell {
+					height: auto;
+					min-height: 0;
+				}
+
+				.tool-stack {
+					height: auto;
+					min-height: 0;
+				}
+
+				.tool-stack > .panel {
+					min-height: 0;
+				}
+
 				.terminal {
 					height: 480px;
 					min-height: 480px;
+					max-height: none;
 				}
 			}
 		</style>
 	</head>
 	<body>
 		<div class="shell">
-			<section class="header">
-				<div class="panel">
+			<section class="layout">
+				<div class="panel chat-shell">
 					<div class="titlebar">
-						<span>PUSD Demo Console</span>
-						<span class="dots">
-							<span class="dot"></span>
-							<span class="dot amber"></span>
-							<span class="dot green"></span>
-						</span>
+						<span>Buyer Chat</span>
+						<span>${TOKEN_SYMBOL} / ${TOKEN_STANDARD} / Chain ${MONAD_TESTNET_CHAIN_ID}</span>
 					</div>
-					<div class="content hero">
-						<div class="kicker">Private Fiat Rails -> Private Token Rail -> Machine Payment</div>
-						<h1>PUSD / Unlink / Monad</h1>
-						<p class="subtle">
-							A single-screen command center for the judge demo: real Column book transfers, real Monad mint and burn, real private Unlink movement, and an x402-style machine-payment flow.
-						</p>
-						<div class="metrics">
-							<div class="metric">
-								<span class="label">User</span>
-								<span class="value" id="metric-user">judge-demo</span>
+					<div class="summary-strip">
+						<div class="summary-chip">
+							<span class="label">Bank Cash</span>
+							<span class="value" id="summaryCash">Not Linked</span>
 							</div>
-							<div class="metric">
-								<span class="label">Chain</span>
-								<span class="value">${MONAD_TESTNET_CHAIN_ID}</span>
-							</div>
-							<div class="metric">
-								<span class="label">Token</span>
-								<span class="value">${TOKEN_SYMBOL} / ${TOKEN_STANDARD}</span>
-							</div>
+							<div class="summary-chip">
+								<span class="label">Private USD</span>
+								<span class="value" id="summaryPrivate">$0.00</span>
+						</div>
+						<div class="summary-chip">
+							<span class="label">Purchase Status</span>
+							<span class="value" id="summaryCheckout">Waiting</span>
 						</div>
 					</div>
-				</div>
-				<div class="panel">
-					<div class="titlebar">
-						<span>Live Demo Flow</span>
-						<span>Plain-English Mode</span>
+					<div class="stage-strip">
+						<div class="stage-pill pending" id="stageBank">
+							<span class="name">Bank</span>
+							<span class="state">Pending</span>
+						</div>
+						<div class="stage-pill pending" id="stageAgent">
+							<span class="name">Agent</span>
+							<span class="state">Pending</span>
+						</div>
+						<div class="stage-pill pending" id="stagePrivate">
+							<span class="name">Private</span>
+							<span class="state">Pending</span>
+						</div>
+						<div class="stage-pill pending" id="stagePay">
+							<span class="name">Pay</span>
+							<span class="state">Pending</span>
+						</div>
+						<div class="stage-pill pending" id="stageCashout">
+							<span class="name">Cashout</span>
+							<span class="state">Pending</span>
+						</div>
 					</div>
-					<div class="content stack">
-						<p class="legend">This screen follows the exact story you want to tell: create a bank-linked buyer, let the buyer talk to an AI shopping agent, then show cash becoming private dollars and powering a machine payment.</p>
-						<div class="flow-grid">
-							<div class="flow-step">
-								<span class="index">01</span>
-								<strong>Create A Buyer</strong>
-								<span>Open a fresh bank-linked user and show starter cash in the linked account.</span>
-							</div>
-							<div class="flow-step">
-								<span class="index">02</span>
-								<strong>Ask The AI Agent</strong>
-								<span>The buyer asks about purchasing something, and the agent finds a product plus a checkout link.</span>
-							</div>
-							<div class="flow-step">
-								<span class="index">03</span>
-								<strong>Check Private Dollars</strong>
-								<span>When the buyer confirms, the agent checks whether enough private PUSD is already available.</span>
-							</div>
-							<div class="flow-step">
-								<span class="index">04</span>
-								<strong>Convert Cash Privately</strong>
-								<span>If needed, cash moves by book transfer, PUSD is minted on Monad, then deposited into Unlink.</span>
-							</div>
-							<div class="flow-step">
-								<span class="index">05</span>
-								<strong>Pay The x402 Checkout</strong>
-								<span>The agent funds the payer path from private PUSD, settles the challenge, and retries automatically.</span>
-							</div>
-							<div class="flow-step">
-								<span class="index">06</span>
-								<strong>Cash Out Leftovers</strong>
-								<span>Any leftover private PUSD is burned back into cash so the user finishes clean.</span>
-							</div>
+					<div class="chat-thread" id="chatThread" aria-live="polite"></div>
+					<div class="chat-compose">
+						<label>
+							Message The Shopping Agent
+							<textarea id="buyerMessage" autocomplete="off" placeholder="Example: I want to buy a lightweight travel backpack under $80.">I want to buy a lightweight travel backpack under $80.</textarea>
+						</label>
+						<div class="chat-actions">
+							<button class="primary" id="askAgent">Send Message</button>
 						</div>
 						<div class="note">
-							AI responses come from the Cloudflare Workers AI binding.<br />
-							Banking uses real Column sandbox accounts.<br />
-							Private value moves through Unlink and settles on Monad testnet.<br />
-							Protected routes require <code>${DEMO_ADMIN_AUTH_HEADER}</code>.<br />
-							x402 settlement is explicitly labeled <code>demo-ledger</code>.
+							Use normal chat to ask for something to buy. Use slash commands for manual control: <code>/system-info</code>, <code>/link-cash</code>, <code>/check-balances</code>, <code>/approve-purchase</code>, <code>/cash-out</code>, <code>/reset-demo</code>, <code>/run-demo</code>.
 						</div>
 					</div>
 				</div>
-			</section>
-
-			<section class="layout">
-				<div class="controls">
+				<div class="tool-stack">
 					<div class="panel">
 						<div class="titlebar">
-							<span>Session</span>
-							<span>Local Or Hosted</span>
+							<span>Controls</span>
+							<span>Operator Rail</span>
 						</div>
-						<div class="content stack">
-							<label>
-								Admin Token
-								<input id="adminToken" type="password" autocomplete="off" placeholder="Paste demo admin token" />
-							</label>
+						<div class="content stack control-stack">
 							<label>
 								Buyer Name
-								<input id="userId" type="text" autocomplete="off" value="judge-demo" />
-							</label>
-							<label>
-								What does the buyer want?
-								<textarea id="buyerMessage" autocomplete="off" placeholder="Example: I want to buy a lightweight travel backpack under $80.">I want to buy a lightweight travel backpack under $80.</textarea>
+								<input id="userId" type="text" autocomplete="off" value="jane-doe" />
 							</label>
 							<div class="button-grid">
 								<button class="primary" id="guidedDemo">Run Full Buyer Demo</button>
 								<button class="full" id="resetState">Reset Everything (Fresh Demo Start)</button>
 								<button class="full" id="clearLog">Clear Live Event Stream</button>
-								<button class="full" id="showPublic">1. Show Live System Info</button>
-								<button id="setupBuyer">2. Create Buyer + Add Starter Cash</button>
-								<button id="askAgent">3. Ask AI Shopping Agent</button>
-								<button id="showBalances">4. Check Cash + Private USD</button>
-								<button id="approvePurchase">5. Confirm Purchase + Pay Privately</button>
-								<button class="full" id="burnFunds">6. Cash Out Leftover Private USD</button>
+								<button class="full" id="showPublic">1. Show Live System</button>
+								<button id="setupBuyer">2. Connect Cash Account</button>
+								<button id="showBalances">3. View Balances</button>
+								<button id="burnFunds">4. Cash Out Leftover</button>
 							</div>
 							<div class="note">
-								Use the numbered buttons when you want to pause between steps and explain what just happened. Use <code>Reset Everything</code> before each judge run to clear the screen, wipe the demo state, and start from a fresh baseline.
+								Use the left panel as the real product experience. Use this rail only when you need to reset the demo, inspect balances, or pause and explain a step.
 							</div>
 						</div>
 					</div>
 				</div>
 				<div class="panel terminal">
 					<div class="titlebar">
-						<span>Live Event Stream</span>
+						<span>Proof Rail</span>
 						<span><span id="statusText">Ready</span><span class="cursor"></span></span>
 					</div>
 					<div class="log" id="log" role="log" aria-live="polite"></div>
+				</div>
+				<div class="panel skill-panel">
+					<div class="titlebar">
+						<span>Agent Skill</span>
+						<span>Chat-Driven Policy</span>
+					</div>
+						<div class="content stack">
+							<p class="legend">This is the decision policy the shopping agent follows during the demo. The chat drives the story; the proof rail shows the real banking and onchain evidence underneath it.</p>
+						<div class="skill-list">
+							<div class="skill-item">
+								<span class="step">Step 1</span>
+								<div class="body">Read the buyer message. If it is shopping intent, quote a product, price, and checkout path.</div>
+							</div>
+							<div class="skill-item">
+								<span class="step">Step 2</span>
+								<div class="body">Ask for approval inside the chat. The buyer then explicitly replies with <code>/approve-purchase</code> or a natural yes.</div>
+							</div>
+							<div class="skill-item">
+								<span class="step">Step 3</span>
+								<div class="body">Check the buyer’s private USD. If low, move cash by Column book transfer, mint PUSD on Monad, and deposit into Unlink.</div>
+							</div>
+							<div class="skill-item">
+								<span class="step">Step 4</span>
+								<div class="body">Fund the shared payer path, settle the x402 challenge, and retry the checkout request automatically.</div>
+							</div>
+							<div class="skill-item">
+								<span class="step">Step 5</span>
+								<div class="body">If value remains, burn the leftover private USD back into cash so the buyer ends settled and clean.</div>
+							</div>
+						</div>
+						<div class="note">
+							The x402 settlement remains intentionally labeled <code>demo-ledger</code>. The banking, mint, private movement, and burn steps remain real.
+						</div>
+					</div>
 				</div>
 			</section>
 		</div>
 
 		<script>
-			const adminTokenInput = document.getElementById('adminToken')
 			const userIdInput = document.getElementById('userId')
 			const buyerMessageInput = document.getElementById('buyerMessage')
+			const chatThread = document.getElementById('chatThread')
 			const log = document.getElementById('log')
 			const statusText = document.getElementById('statusText')
-			const metricUser = document.getElementById('metric-user')
+			const summaryCash = document.getElementById('summaryCash')
+			const summaryPrivate = document.getElementById('summaryPrivate')
+			const summaryCheckout = document.getElementById('summaryCheckout')
+			const stageBank = document.getElementById('stageBank')
+			const stageAgent = document.getElementById('stageAgent')
+			const stagePrivate = document.getElementById('stagePrivate')
+			const stagePay = document.getElementById('stagePay')
+			const stageCashout = document.getElementById('stageCashout')
 			const initialConfig = {
 				adminToken: ${JSON.stringify(initialAdminToken)},
 				userId: ${JSON.stringify(initialUserId)},
@@ -1807,30 +2109,107 @@ function renderTerminalDemoUi(options?: {
 
 			const state = {
 				busy: false,
-				adminToken: initialConfig.adminToken || localStorage.getItem('pusd-demo-admin-token') || '',
+				adminToken: initialConfig.adminToken || PUBLIC_DEMO_ADMIN_TOKEN,
 				autoplayStarted: false,
 				lastOffer: null,
+				buyerReady: false,
+				awaitingConfirmation: false,
+				pendingShoppingMessage: null,
 			}
 
 			userIdInput.value = initialConfig.userId || userIdInput.value
-			metricUser.textContent = userIdInput.value.trim() || 'judge-demo'
-
-			if (state.adminToken !== '') {
-				adminTokenInput.value = state.adminToken
-				localStorage.setItem('pusd-demo-admin-token', state.adminToken)
-			}
-
-			adminTokenInput.addEventListener('input', () => {
-				state.adminToken = adminTokenInput.value.trim()
-				localStorage.setItem('pusd-demo-admin-token', state.adminToken)
-			})
 
 			userIdInput.addEventListener('input', () => {
-				metricUser.textContent = userIdInput.value.trim() || 'judge-demo'
+				if (state.busy) {
+					return
+				}
+				void syncSummaryFromServer()
+			})
+
+			buyerMessageInput.addEventListener('keydown', (event) => {
+				if (event.key !== 'Enter' || event.shiftKey) {
+					return
+				}
+				event.preventDefault()
+				if (state.busy) {
+					return
+				}
+				withBusy('Chat', handleChatSubmit)
 			})
 
 			function setStatus(value) {
 				statusText.textContent = value
+			}
+
+			function setCheckoutStatus(value) {
+				summaryCheckout.textContent = value
+			}
+
+			function setStage(element, status, label) {
+				element.className = 'stage-pill ' + status
+				element.querySelector('.state').textContent = label
+			}
+
+			function resetStages() {
+				setStage(stageBank, 'pending', 'Pending')
+				setStage(stageAgent, 'pending', 'Pending')
+				setStage(stagePrivate, 'pending', 'Pending')
+				setStage(stagePay, 'pending', 'Pending')
+				setStage(stageCashout, 'pending', 'Pending')
+			}
+
+			function setSummaryBalances(fiatCents, privatePusdCents) {
+				if (typeof fiatCents === 'number' && Number.isFinite(fiatCents)) {
+					summaryCash.textContent = centsToUsd(fiatCents)
+				} else {
+					summaryCash.textContent = 'Not Linked'
+				}
+				summaryPrivate.textContent = centsToUsd(privatePusdCents)
+			}
+
+			function appendChatBubble(kind, title, text, extra) {
+				const bubble = document.createElement('div')
+				bubble.className = 'bubble ' + kind
+
+				const meta = document.createElement('div')
+				meta.className = 'meta'
+				meta.textContent = title
+				bubble.appendChild(meta)
+
+				const main = document.createElement('div')
+				main.className = 'text'
+				main.textContent = text
+				bubble.appendChild(main)
+
+				if (extra !== undefined && extra !== '') {
+					const sub = document.createElement('div')
+					sub.className = 'subtext'
+					appendLinkedSegments(sub, extra)
+					bubble.appendChild(sub)
+				}
+
+				chatThread.appendChild(bubble)
+				chatThread.scrollTop = chatThread.scrollHeight
+				return bubble
+			}
+
+			function appendPendingAgentBubble() {
+				return appendChatBubble(
+					'loading',
+					'AI Shopping Agent',
+					'Thinking through the request...',
+					'Using the Cloudflare AI binding to route the next action.'
+				)
+			}
+
+			function appendLoadingBubble(title, text, extra) {
+				return appendChatBubble('loading', title, text, extra)
+			}
+
+			function resetChatThread() {
+				chatThread.replaceChildren()
+				resetStages()
+				setCheckoutStatus('Waiting')
 			}
 
 			function monadExplorerLink(value) {
@@ -1935,17 +2314,45 @@ function renderTerminalDemoUi(options?: {
 			}
 
 			function getUserId() {
-				return userIdInput.value.trim() || 'judge-demo'
+				return userIdInput.value.trim() || 'jane-doe'
 			}
 
 			function getBuyerMessage() {
 				return buyerMessageInput.value.trim()
 			}
 
+			function canonicalCommand(value) {
+				switch (value) {
+					case '/info':
+					case '/system-info':
+						return '/system-info'
+					case '/buyer':
+					case '/link-cash':
+						return '/link-cash'
+					case '/balances':
+					case '/check-balances':
+						return '/check-balances'
+					case '/confirm':
+					case '/approve-purchase':
+						return '/approve-purchase'
+					case '/cashout':
+					case '/cash-out':
+						return '/cash-out'
+					case '/reset':
+					case '/reset-demo':
+						return '/reset-demo'
+					case '/demo':
+					case '/run-demo':
+						return '/run-demo'
+					default:
+						return value
+				}
+			}
+
 			function getAdminToken() {
-				const token = adminTokenInput.value.trim()
+				const token = state.adminToken.trim()
 				if (token === '') {
-					throw new Error('Admin token required for protected routes')
+					throw new Error('Demo admin token is not configured')
 				}
 				return token
 			}
@@ -2034,18 +2441,57 @@ function renderTerminalDemoUi(options?: {
 				}
 			}
 
+			async function syncSummaryFromServer() {
+				if (state.adminToken.trim() === '') {
+					return
+				}
+				try {
+					const { body } = await request('/balances?create=0&userId=' + encodeURIComponent(getUserId()), {}, true)
+					if (body.user === null) {
+						state.buyerReady = false
+						setSummaryBalances(null, 0)
+						if (summaryCheckout.textContent !== 'Paid') {
+							setCheckoutStatus('Waiting')
+						}
+						return
+					}
+						setSummaryBalances(body.user.fiatCents, body.user.privatePusdCents)
+					setStage(stageBank, 'done', 'Linked')
+					if (body.user.privatePusdCents > 0) {
+						setStage(stagePrivate, 'done', 'Ready')
+					} else if (stagePrivate.classList.contains('done')) {
+						setStage(stagePrivate, 'pending', 'Pending')
+					}
+				} catch {
+					// Keep the UI usable even if auth is missing or the request fails.
+				}
+			}
+
 			async function showPublic() {
 				const { body } = await request('/demo/public')
 				writeLine('ok', 'Live system info', body)
+				setStage(stageBank, 'active', 'Ready')
+				appendChatBubble(
+					'system',
+					'System',
+					'The live rails are ready: this demo uses Column for bank accounts, Unlink for private balances, and Monad for token settlement.',
+					'Treasury: ' + body.onchainRails.treasuryWallet + ' | PUSD token: ' + body.token.address
+				)
 			}
 
 			async function resetState() {
 				clearLog()
+				resetChatThread()
 				writeLine('info', 'Resetting the browser view and server-side demo state')
 				const { body } = await request('/admin/reset', {
 					method: 'POST',
 				}, true)
 				state.lastOffer = null
+				state.buyerReady = false
+				state.awaitingConfirmation = false
+				state.pendingShoppingMessage = null
+				setSummaryBalances(null, 0)
+				setCheckoutStatus('Waiting')
 				writeLine('ok', 'Demo state reset', body)
 				writeLine('ok', 'Fresh start ready. Begin with step 1.')
 			}
@@ -2058,151 +2504,340 @@ function renderTerminalDemoUi(options?: {
 						userId: getUserId(),
 					}),
 				}, true)
+				setSummaryBalances(body.buyer.startingCashCents, 0)
+				state.buyerReady = true
+				setCheckoutStatus('Ready')
+				setStage(stageBank, 'done', 'Linked')
 				writeLine('ok', 'Buyer account is linked and funded', body)
+				appendChatBubble(
+					'system',
+					'Linked Cash Account',
+					'Your new buyer is ready with ' + body.buyer.startingCashUsd + ' in a linked cash balance.',
+					'Bank account: ' + body.buyer.linkedBankAccountId + ' | Private wallet: ' + body.buyer.privateWalletId
+				)
+				if (typeof state.pendingShoppingMessage === 'string' && state.pendingShoppingMessage !== '') {
+					const pendingMessage = state.pendingShoppingMessage
+					state.pendingShoppingMessage = null
+					appendChatBubble(
+						'agent',
+						'AI Shopping Agent',
+						'Your cash account is linked now. I am continuing your last shopping request and preparing a quote.',
+						'Next: I will re-check your last request and return the checkout quote.'
+					)
+					await askAgent(pendingMessage)
+				}
 			}
 
 			async function showBalances() {
 				const body = await getBalances()
+				setSummaryBalances(body.user.fiatCents, body.user.privatePusdCents)
+				if (body.user.privatePusdCents <= 0 && summaryCheckout.textContent !== 'Paid') {
+					setCheckoutStatus('Waiting')
+				}
 				writeLine('ok', 'Balance snapshot', body)
+				appendChatBubble(
+					'system',
+					'Balance Check',
+					'Cash: ' + centsToUsd(body.user.fiatCents) + ' | Private USD: ' + centsToUsd(body.user.privatePusdCents),
+					body.user.privatePusdCents > 0
+						? 'The buyer now has private spending power without holding a public token balance.'
+						: 'The buyer is still starting from cash only.'
+				)
 			}
 
-			async function askAgent() {
-				const message = getBuyerMessage()
+			async function askAgent(customMessage) {
+				const message = customMessage ?? getBuyerMessage()
 				if (message === '') {
 					throw new Error('Enter a shopping question first')
 				}
 
+				if (customMessage === undefined) {
+					appendChatBubble('user', 'Buyer', message)
+				}
 				writeLine('info', 'Buyer asks', {
 					userId: getUserId(),
 					message,
 				})
+				const pendingBubble = appendPendingAgentBubble()
 
-				const { body } = await request('/demo/assistant', {
-					method: 'POST',
-					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({
-						userId: getUserId(),
-						message,
-					}),
-				})
-
-				state.lastOffer = body
-				writeLine('ok', 'AI shopping agent reply', body)
-			}
-
-			async function runPurchaseFlow() {
-				if (state.lastOffer === null) {
-					await askAgent()
+				let body
+				try {
+					const response = await request('/demo/assistant', {
+						method: 'POST',
+						headers: { 'content-type': 'application/json' },
+						body: JSON.stringify({
+							userId: getUserId(),
+							message,
+						}),
+					})
+					body = response.body
+				} finally {
+					pendingBubble.remove()
 				}
 
+				state.awaitingConfirmation = body.requiresConfirmation === true
+				state.lastOffer = state.awaitingConfirmation ? body : null
+				state.pendingShoppingMessage = body.suggestedAction === '/link-cash' ? message : null
+				setStage(stageAgent, 'done', 'Quoted')
+				writeLine('ok', 'AI shopping agent reply', body)
+				const detailParts = []
+				if (typeof body.checkoutLink === 'string' && body.checkoutLink !== '') {
+					detailParts.push('Checkout link: ' + body.checkoutLink)
+				}
+				if (typeof body.priceCents === 'number') {
+					detailParts.push('Price: ' + centsToUsd(body.priceCents))
+				}
+				if (typeof body.suggestedAction === 'string' && body.suggestedAction !== '') {
+					detailParts.push('Suggested next step: ' + body.suggestedAction)
+				}
+				appendChatBubble(
+					'agent',
+					'AI Shopping Agent',
+					body.reply,
+					detailParts.join(' | ')
+				)
+				if (body.requiresConfirmation) {
+					setCheckoutStatus('Awaiting OK')
+				} else if (body.suggestedAction === '/link-cash') {
+					setCheckoutStatus('Link Cash')
+				} else {
+					setCheckoutStatus('Waiting')
+				}
+			}
+
+			async function runPurchaseFlow(options = {}) {
+				if (state.lastOffer === null) {
+					appendChatBubble(
+						'agent',
+						'AI Shopping Agent',
+						'There is no active quote to approve yet.',
+						'Ask for a product first, then approve it with /approve-purchase.'
+					)
+					return
+				}
+
+				const { appendConfirmationBubble = true, confirmationText = 'Yes, go ahead and buy it.' } = options
 				const offer = state.lastOffer
+				const quotedAmountCents = offer.priceCents
+				const checkoutAmountCents =
+					typeof offer.finalChargeCents === 'number' ? offer.finalChargeCents : offer.priceCents
+				const discountCents = Math.max(0, quotedAmountCents - checkoutAmountCents)
 				const startingBalances = await getBalances()
+				setSummaryBalances(startingBalances.user.fiatCents, startingBalances.user.privatePusdCents)
+				setStage(stagePay, 'active', 'Paying')
+				if (appendConfirmationBubble) {
+					appendChatBubble(
+						'user',
+						'Buyer',
+						confirmationText,
+						'The agent will check whether private USD already exists before paying.'
+					)
+				}
 				writeLine('info', 'Buyer confirms the purchase', {
-					price: centsToUsd(offer.priceCents),
+					quotedPrice: centsToUsd(quotedAmountCents),
+					checkoutPrice: centsToUsd(checkoutAmountCents),
+					discount: centsToUsd(discountCents),
 					privateUsdBefore: centsToUsd(startingBalances.user.privatePusdCents),
 				})
 
 				const targetPrivateBalanceCents = offer.targetPrivateBalanceCents
 				if (startingBalances.user.privatePusdCents < targetPrivateBalanceCents) {
+					setStage(stagePrivate, 'active', 'Minting')
 					const topUpAmountCents = targetPrivateBalanceCents - startingBalances.user.privatePusdCents
 					writeLine('info', 'Private balance is low, converting cash into Private USD', {
 						topUpAmountCents,
 						topUpAmountUsd: centsToUsd(topUpAmountCents),
 					})
-					const { body } = await request('/mint-intents', {
-						method: 'POST',
-						headers: { 'content-type': 'application/json' },
-						body: JSON.stringify({
-							userId: getUserId(),
-							amountCents: topUpAmountCents,
-						}),
-					}, true)
-					writeLine('info', 'Cash to PUSD conversion started', body.intent)
-					const intent = body.async ? await pollIntent(body.pollPath, 'Cash to PUSD') : body.intent
-					writeLine('ok', 'Private USD is ready', intent)
+					const mintingBubble = appendLoadingBubble(
+						'AI Shopping Agent',
+						'Converting bank cash into private USD...',
+						'This moves cash into reserve, mints PUSD on Monad, and deposits it into Unlink.'
+					)
+					try {
+						const { body } = await request('/mint-intents', {
+							method: 'POST',
+							headers: { 'content-type': 'application/json' },
+							body: JSON.stringify({
+								userId: getUserId(),
+								amountCents: topUpAmountCents,
+							}),
+						}, true)
+						writeLine('info', 'Cash to PUSD conversion started', body.intent)
+						const intent = body.async ? await pollIntent(body.pollPath, 'Cash to PUSD') : body.intent
+						writeLine('ok', 'Private USD is ready', intent)
+						const postMintBalances = await getBalances()
+						setSummaryBalances(postMintBalances.user.fiatCents, postMintBalances.user.privatePusdCents)
+						setStage(stagePrivate, 'done', 'Ready')
+						appendChatBubble(
+							'system',
+							'Private Conversion',
+							'Cash was converted into private USD only after the buyer approved the purchase, and only for the exact quoted amount.',
+							'Quoted amount: ' + centsToUsd(quotedAmountCents) + ' | Column transfer: ' + intent.column_transfer_id + ' | Mint tx: ' + intent.tx_hash
+						)
+					} finally {
+						mintingBubble.remove()
+					}
 				} else {
 					writeLine('ok', 'Buyer already has enough Private USD', {
 						privateUsdAvailable: centsToUsd(startingBalances.user.privatePusdCents),
 					})
+					setStage(stagePrivate, 'done', 'Ready')
+					appendChatBubble(
+						'system',
+						'Private Balance Ready',
+						'The buyer already has enough private USD, so no additional minting is needed.',
+						'Available private USD: ' + centsToUsd(startingBalances.user.privatePusdCents)
+					)
 				}
 
-				const payResponse = await fetch('/demo/paid')
-				if (payResponse.status !== 402) {
-					throw new Error('Expected 402 from /demo/paid')
-				}
-				const challengeHeader = payResponse.headers.get('PAYMENT-REQUIRED')
-				if (!challengeHeader) {
-					throw new Error('PAYMENT-REQUIRED header missing')
-				}
-				const challenge = decodeBase64Json(challengeHeader)
-				writeLine('warn', 'Checkout link requested payment', challenge)
+				setCheckoutStatus('Paying')
+				const checkoutBubble = appendLoadingBubble(
+					'AI Shopping Agent',
+					'Completing the private checkout...',
+					'Funding the payer path, satisfying the x402 challenge, and retrying the purchase.'
+				)
+				try {
+					const payResponse = await fetch('/demo/paid?amountCents=' + String(checkoutAmountCents))
+					if (payResponse.status !== 402) {
+						throw new Error('Expected 402 from /demo/paid')
+					}
+					const challengeHeader = payResponse.headers.get('PAYMENT-REQUIRED')
+					if (!challengeHeader) {
+						throw new Error('PAYMENT-REQUIRED header missing')
+					}
+					const challenge = decodeBase64Json(challengeHeader)
+					writeLine('warn', 'Checkout link requested payment', challenge)
 
-				await request('/x402/ensure-funds', {
-					method: 'POST',
-					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({
-						userId: getUserId(),
-						amountCents: challenge.amountCents,
-					}),
-				}, true)
-				writeLine('ok', 'Agent used the payment skill to move private dollars into the payer path', {
-					amountUsd: centsToUsd(challenge.amountCents),
-				})
+					await request('/x402/ensure-funds', {
+						method: 'POST',
+						headers: { 'content-type': 'application/json' },
+						body: JSON.stringify({
+							userId: getUserId(),
+							amountCents: challenge.amountCents,
+						}),
+					}, true)
+					writeLine('ok', 'Agent used the payment skill to move private dollars into the payer path', {
+						amountUsd: centsToUsd(challenge.amountCents),
+					})
+					const postFundingBalances = await getBalances()
+					setSummaryBalances(postFundingBalances.user.fiatCents, postFundingBalances.user.privatePusdCents)
 
-				const { body: settleBody } = await request('/facilitator/settle', {
-					method: 'POST',
-					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({
+					const { body: settleBody } = await request('/facilitator/settle', {
+						method: 'POST',
+						headers: { 'content-type': 'application/json' },
+						body: JSON.stringify({
+							challengeId: challenge.challengeId,
+						}),
+					}, true)
+					writeLine('ok', 'Checkout challenge settled', settleBody)
+
+					const signature = encodeBase64Json({
 						challengeId: challenge.challengeId,
-					}),
-				}, true)
-				writeLine('ok', 'Checkout challenge settled', settleBody)
+						receiptId: settleBody.receiptId,
+					})
+					const paidResponse = await fetch('/demo/paid?amountCents=' + String(checkoutAmountCents), {
+						headers: {
+							'PAYMENT-SIGNATURE': signature,
+						},
+					})
+					if (!paidResponse.ok) {
+						throw new Error(await paidResponse.text())
+					}
+					const paymentResponse = decodeBase64Json(paidResponse.headers.get('PAYMENT-RESPONSE'))
+					const paidBody = await paidResponse.json()
+					writeLine('ok', 'Checkout request succeeded', {
+						paidBody,
+						paymentResponse,
+					})
+					setCheckoutStatus('Paid')
+					setStage(stagePay, 'done', 'Paid')
+					appendChatBubble(
+						'system',
+						'Checkout Complete',
+						discountCents > 0
+							? 'The agent completed the purchase and found a last-minute discount at checkout.'
+							: 'The agent completed the purchase through the x402 checkout path.',
+						'Receipt: ' + paymentResponse.receiptId + ' | Charged: ' + centsToUsd(checkoutAmountCents) + ' | Discount: ' + centsToUsd(discountCents)
+					)
+					state.lastOffer = null
+					state.awaitingConfirmation = false
 
-				const signature = encodeBase64Json({
-					challengeId: challenge.challengeId,
-					receiptId: settleBody.receiptId,
-				})
-				const paidResponse = await fetch('/demo/paid', {
-					headers: {
-						'PAYMENT-SIGNATURE': signature,
-					},
-				})
-				if (!paidResponse.ok) {
-					throw new Error(await paidResponse.text())
+					const updatedBalances = await getBalances()
+					setSummaryBalances(updatedBalances.user.fiatCents, updatedBalances.user.privatePusdCents)
+					writeLine('ok', 'Balance snapshot', updatedBalances)
+					appendChatBubble(
+						'system',
+						'After Purchase',
+						'The buyer now has ' + centsToUsd(updatedBalances.user.privatePusdCents) + ' left as private USD after checkout.',
+						updatedBalances.user.privatePusdCents > 0
+							? 'That leftover can be burned back into cash.'
+							: 'There is no leftover private balance to redeem.'
+					)
+				} finally {
+					checkoutBubble.remove()
 				}
-				const paymentResponse = decodeBase64Json(paidResponse.headers.get('PAYMENT-RESPONSE'))
-				const paidBody = await paidResponse.json()
-				writeLine('ok', 'Checkout request succeeded', {
-					paidBody,
-					paymentResponse,
-				})
-
-				await showBalances()
 			}
 
 			async function cashOutLeftover() {
 				const balances = await getBalances()
+				setSummaryBalances(balances.user.fiatCents, balances.user.privatePusdCents)
 				if (balances.user.privatePusdCents <= 0) {
 					writeLine('warn', 'There is no leftover Private USD to cash out', balances)
+					setStage(stageCashout, 'done', 'Skipped')
+					appendChatBubble(
+						'system',
+						'No Cash-Out Needed',
+						'There is no remaining private USD to redeem.',
+						'The buyer is already back to cash only.'
+					)
 					return
 				}
 
+				setStage(stageCashout, 'active', 'Burning')
 				writeLine('info', 'Cashing the leftover Private USD back into the linked bank account', {
 					remainingPrivateUsd: centsToUsd(balances.user.privatePusdCents),
 				})
+				const cashoutBubble = appendLoadingBubble(
+					'AI Shopping Agent',
+					'Redeeming the leftover private balance...',
+					'Withdrawing from Unlink, burning PUSD on Monad, and returning the cash to the bank account.'
+				)
+				let updatedBalances
 
-				const { body } = await request('/burn-intents', {
-					method: 'POST',
-					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({
-						userId: getUserId(),
-						amountCents: balances.user.privatePusdCents,
-					}),
-				}, true)
-				writeLine('info', 'Cash-out started', body.intent)
-				const intent = body.async ? await pollIntent(body.pollPath, 'Cash-out') : body.intent
-				writeLine('ok', 'Leftover Private USD is back in cash', intent)
-				await showBalances()
+				try {
+					const { body } = await request('/burn-intents', {
+						method: 'POST',
+						headers: { 'content-type': 'application/json' },
+						body: JSON.stringify({
+							userId: getUserId(),
+							amountCents: balances.user.privatePusdCents,
+						}),
+					}, true)
+					writeLine('info', 'Cash-out started', body.intent)
+					const intent = body.async ? await pollIntent(body.pollPath, 'Cash-out') : body.intent
+					writeLine('ok', 'Leftover Private USD is back in cash', intent)
+					appendChatBubble(
+						'system',
+						'Cash-Out Complete',
+						'The leftover private USD was burned and returned to the linked cash account.',
+						'Burn tx: ' + intent.tx_hash + ' | Payout transfer: ' + intent.column_transfer_id
+					)
+					updatedBalances = await getBalances()
+					setSummaryBalances(updatedBalances.user.fiatCents, updatedBalances.user.privatePusdCents)
+					setCheckoutStatus('Settled')
+					setStage(stageCashout, 'done', 'Done')
+				} finally {
+					cashoutBubble.remove()
+				}
+				if (updatedBalances) {
+					writeLine('ok', 'Balance snapshot', updatedBalances)
+					appendChatBubble(
+						'system',
+						'Finished Cleanly',
+						'The buyer ends with cash again and no outstanding private USD.',
+						'Cash: ' + centsToUsd(updatedBalances.user.fiatCents) + ' | Private USD: ' + centsToUsd(updatedBalances.user.privatePusdCents)
+					)
+				}
 			}
 
 			async function runGuidedDemo() {
@@ -2210,11 +2845,87 @@ function renderTerminalDemoUi(options?: {
 				await resetState()
 				await showPublic()
 				await setupBuyer()
-				await askAgent()
 				await showBalances()
+				await askAgent()
 				await runPurchaseFlow()
 				await cashOutLeftover()
 				writeLine('ok', '--- Buyer demo complete ---')
+			}
+
+			async function handleChatSubmit() {
+				const message = getBuyerMessage()
+				if (message === '') {
+					throw new Error('Enter a message first')
+				}
+
+				appendChatBubble('user', 'Buyer', message)
+				buyerMessageInput.value = ''
+				const normalized = message.trim().toLowerCase()
+				const command = canonicalCommand(normalized)
+
+				if (command === '/help') {
+					appendChatBubble(
+						'agent',
+						'AI Shopping Agent',
+						'Available commands: /system-info (show the live rails), /link-cash (connect the buyer bank account), /check-balances, /approve-purchase, /cash-out, /reset-demo, /run-demo.',
+						'Any normal message is treated as a shopping request.'
+					)
+					return
+				}
+
+				if (command === '/system-info') {
+					await showPublic()
+					return
+				}
+
+				if (command === '/link-cash') {
+					await setupBuyer()
+					return
+				}
+
+				if (command === '/check-balances') {
+					await showBalances()
+					return
+				}
+
+				if (command === '/cash-out') {
+					await cashOutLeftover()
+					return
+				}
+
+				if (command === '/reset-demo') {
+					await resetState()
+					return
+				}
+
+				if (command === '/run-demo') {
+					await runGuidedDemo()
+					return
+				}
+
+				const naturalConfirmation = /^(yes|yes please|go ahead|buy it|do it|confirm)$/i.test(message.trim())
+				if (
+					(command === '/approve-purchase' && state.awaitingConfirmation) ||
+					(state.awaitingConfirmation && naturalConfirmation)
+				) {
+					await runPurchaseFlow({
+						appendConfirmationBubble: false,
+						confirmationText: message,
+					})
+					return
+				}
+
+				if (command === '/approve-purchase' && !state.awaitingConfirmation) {
+					appendChatBubble(
+						'agent',
+						'AI Shopping Agent',
+						'There is no quoted item to approve yet.',
+						'Ask me to find something to buy first, then approve that quote with /approve-purchase.'
+					)
+					return
+				}
+
+				await askAgent(message)
 			}
 
 			document.getElementById('showPublic').addEventListener('click', () => withBusy('System Info', showPublic))
@@ -2224,13 +2935,16 @@ function renderTerminalDemoUi(options?: {
 				writeLine('ok', 'Live event stream cleared.')
 			})
 			document.getElementById('setupBuyer').addEventListener('click', () => withBusy('Create Buyer', setupBuyer))
-			document.getElementById('askAgent').addEventListener('click', () => withBusy('AI Agent', askAgent))
+			document.getElementById('askAgent').addEventListener('click', () => withBusy('Chat', handleChatSubmit))
 			document.getElementById('showBalances').addEventListener('click', () => withBusy('Balances', showBalances))
-			document.getElementById('approvePurchase').addEventListener('click', () => withBusy('Private Payment', runPurchaseFlow))
 			document.getElementById('burnFunds').addEventListener('click', () => withBusy('Cash Out', cashOutLeftover))
 			document.getElementById('guidedDemo').addEventListener('click', () => withBusy('Buyer Demo', runGuidedDemo))
 
-			writeLine('ok', 'Console ready. Use the numbered buttons to explain each step, or run the full buyer demo.')
+			resetChatThread()
+			setSummaryBalances(null, 0)
+			setCheckoutStatus('Waiting')
+			writeLine('ok', 'Demo ready. Start in chat, use slash commands for manual control, or run the full buyer demo.')
+			void syncSummaryFromServer()
 
 			if (initialConfig.autoplay) {
 				writeLine('warn', 'Autoplay enabled. The buyer demo will start automatically in 1.2s.')
@@ -2273,6 +2987,14 @@ app.get('/demo/public', async (c) => {
 
 app.post('/demo/assistant', async (c) => {
 	const payload = await parseJson<unknown>(c.req.raw)
+	const userId =
+		typeof payload === 'object' &&
+		payload !== null &&
+		'userId' in payload &&
+		typeof payload.userId === 'string' &&
+		payload.userId.trim() !== ''
+			? payload.userId.trim()
+			: 'jane-doe'
 	const userMessage =
 		typeof payload === 'object' &&
 		payload !== null &&
@@ -2290,40 +3012,191 @@ app.post('/demo/assistant', async (c) => {
 	}
 
 	const priceCents = Number.parseInt(c.env.DEMO_PRICE_CENTS, 10) || DEFAULT_DEMO_PRICE_CENTS
-	const targetPrivateBalanceCents = Math.max(300, priceCents * 2)
-	const prompt = [
-		'You are the purchase assistant for a hackathon demo.',
-		'The customer is always asking about buying something.',
-		'Reply in 3 short sentences.',
-		'Sentence 1: say you found a fitting product.',
-		`Sentence 2: mention the sample checkout link https://merchant.example/checkout and say the price is $${(priceCents / 100).toFixed(2)}.`,
-		'Sentence 3: ask the customer to confirm and say you will privately convert cash into PUSD if needed before paying.',
-		`Customer request: ${userMessage}`,
-	].join(' ')
+	await ensureSchema(c.env.DB)
+	const buyerLinked =
+		(await c.env.DB
+			.prepare(`SELECT user_id FROM users WHERE user_id = ?1`)
+			.bind(userId)
+			.first<{ user_id: string }>()) !== null
 
 	try {
-		const result = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
-			prompt,
-			max_tokens: 180,
+		const result = await c.env.AI.run('@hf/nousresearch/hermes-2-pro-mistral-7b', {
+			messages: [
+				{
+					role: 'system',
+					content: [
+						'You are a shopping agent in a hackathon demo.',
+						'Always call the route_buyer_message tool exactly once.',
+						'Classify the buyer message and generate the reply text.',
+						'Use intent smalltalk for greetings or non-shopping chat.',
+						'Use intent needs_buyer when the user wants to buy something but has no linked cash account yet.',
+						'Use intent shopping_quote when the user wants to buy something and the linked cash account already exists.',
+						'If intent is needs_buyer, suggest /link-cash.',
+						'If intent is shopping_quote, suggest /approve-purchase.',
+						'Keep the reply concise, natural, and conversational.',
+						`The buyer linked account status is: ${buyerLinked ? 'linked' : 'not linked'}.`,
+					].join(' '),
+				},
+				{
+					role: 'user',
+					content: userMessage,
+				},
+			],
+			tools: [
+				{
+					name: 'route_buyer_message',
+					description: 'Route the buyer message for the demo UI',
+					parameters: {
+						type: 'object',
+						properties: {
+							intent: {
+								type: 'string',
+								enum: ['smalltalk', 'needs_buyer', 'shopping_quote'],
+							},
+							reply: {
+								type: 'string',
+								description: 'Short conversational reply for the buyer',
+							},
+							suggestedAction: {
+								type: 'string',
+								enum: ['', '/link-cash', '/approve-purchase'],
+							},
+							productLabel: {
+								type: 'string',
+								description: 'Short product label if the user is shopping',
+							},
+						},
+						required: ['intent', 'reply', 'suggestedAction'],
+					},
+				},
+			],
+			tool_choice: 'auto',
+			max_tokens: 220,
 		})
-		const reply =
-			typeof result === 'string'
-				? result.trim()
-				: typeof result === 'object' &&
-					  result !== null &&
-					  'response' in result &&
-					  typeof result.response === 'string'
-					? result.response.trim()
-					: JSON.stringify(result)
+		const resultObject = typeof result === 'object' && result !== null ? result : null
+		const rawToolCalls =
+			resultObject !== null &&
+			'tool_calls' in resultObject &&
+			Array.isArray(resultObject.tool_calls)
+				? resultObject.tool_calls
+				: resultObject !== null &&
+					  'response' in resultObject &&
+					  typeof resultObject.response === 'object' &&
+					  resultObject.response !== null &&
+					  'tool_calls' in resultObject.response &&
+					  Array.isArray(resultObject.response.tool_calls)
+					? resultObject.response.tool_calls
+					: []
 
-		return c.json({
-			mode: 'cloudflare-ai',
-			reply,
-			priceCents,
-			checkoutLink: 'https://merchant.example/checkout',
-			requiresConfirmation: true,
-			targetPrivateBalanceCents,
-		})
+		const firstToolCall = rawToolCalls[0] as
+			| { arguments?: unknown }
+			| undefined
+
+		let routed:
+			| {
+					intent: 'smalltalk' | 'needs_buyer' | 'shopping_quote'
+					reply: string
+					suggestedAction: '' | '/link-cash' | '/approve-purchase'
+					productLabel?: string
+			  }
+			| undefined
+
+		if (firstToolCall !== undefined && firstToolCall.arguments !== undefined) {
+			const args =
+				typeof firstToolCall.arguments === 'string'
+					? JSON.parse(firstToolCall.arguments)
+					: firstToolCall.arguments
+
+			if (
+				typeof args === 'object' &&
+				args !== null &&
+				'intent' in args &&
+				'reply' in args &&
+				'suggestedAction' in args &&
+				(args.intent === 'smalltalk' ||
+					args.intent === 'needs_buyer' ||
+					args.intent === 'shopping_quote') &&
+				typeof args.reply === 'string' &&
+				(args.suggestedAction === '' ||
+					args.suggestedAction === '/link-cash' ||
+					args.suggestedAction === '/approve-purchase')
+			) {
+				routed = {
+					intent: args.intent,
+					reply: args.reply.trim(),
+					suggestedAction: args.suggestedAction,
+					productLabel:
+						'productLabel' in args && typeof args.productLabel === 'string'
+							? args.productLabel.trim()
+							: undefined,
+				}
+			}
+		}
+
+		if (routed === undefined) {
+			const looksLikeShopping = /(buy|purchase|shop|find|looking for|recommend|need)/i.test(
+				userMessage
+			)
+			if (!looksLikeShopping) {
+				routed = {
+					intent: 'smalltalk',
+					reply: 'Hi. I can help you shop for something and then walk the private payment flow once you are ready.',
+					suggestedAction: '',
+				}
+			} else if (!buyerLinked) {
+				routed = {
+					intent: 'needs_buyer',
+					reply: 'I can help with that purchase. First, link a buyer cash account so I can prepare the payment flow.',
+					suggestedAction: '/link-cash',
+				}
+			} else {
+				routed = {
+					intent: 'shopping_quote',
+					reply: 'I found a matching option and a checkout path. If you want me to proceed, confirm and I will handle the private payment flow.',
+					suggestedAction: '/approve-purchase',
+				}
+			}
+		}
+
+		const generatedOffer = createDynamicDemoOffer(userMessage, priceCents)
+		const productLabel =
+			routed.productLabel !== undefined && routed.productLabel !== ''
+				? routed.productLabel
+				: generatedOffer.productLabel
+		const effectiveIntent =
+			routed.intent === 'shopping_quote' && !buyerLinked ? 'needs_buyer' : routed.intent
+		const suggestedAction =
+			effectiveIntent === 'needs_buyer'
+				? '/link-cash'
+				: effectiveIntent === 'shopping_quote'
+					? '/approve-purchase'
+					: ''
+		const checkoutLink = effectiveIntent === 'shopping_quote' ? generatedOffer.checkoutLink : ''
+		const replyText =
+			effectiveIntent === 'needs_buyer'
+				? `I can help you buy ${productLabel}. First, link your cash account with /link-cash, then I can quote the checkout and run the private payment flow.`
+				: effectiveIntent === 'shopping_quote'
+					? `I found ${productLabel} for $${(generatedOffer.priceCents / 100).toFixed(2)}. If you want me to proceed, reply with /approve-purchase and I will handle the private payment flow.`
+					: routed.reply
+		const responseBody = {
+			mode: 'cloudflare-ai-tools',
+			reply: replyText,
+			intent: effectiveIntent,
+			suggestedAction,
+			buyerLinked,
+			productLabel: effectiveIntent === 'smalltalk' ? null : productLabel,
+			priceCents: effectiveIntent === 'shopping_quote' ? generatedOffer.priceCents : null,
+			finalChargeCents: effectiveIntent === 'shopping_quote' ? generatedOffer.finalChargeCents : null,
+			discountCents: effectiveIntent === 'shopping_quote' ? generatedOffer.discountCents : null,
+			checkoutLink,
+			requiresConfirmation: effectiveIntent === 'shopping_quote',
+			targetPrivateBalanceCents:
+				effectiveIntent === 'shopping_quote'
+					? generatedOffer.priceCents
+					: null,
+		}
+
+		return c.json(responseBody)
 	} catch (error) {
 		return c.json(
 			{
@@ -2349,7 +3222,7 @@ app.post('/admin/demo-buyer', async (c) => {
 		typeof payload.userId === 'string' &&
 		payload.userId.trim() !== ''
 			? payload.userId.trim()
-			: 'judge-demo'
+			: 'jane-doe'
 
 	await ensureReady(c, userId)
 	const user = await loadUser(c.env.DB, userId)
@@ -2495,18 +3368,32 @@ app.get('/balances', async (c) => {
 		return authError
 	}
 	const userId = c.req.query('userId') ?? 'demo-user'
-	await ensureReady(c, userId)
+	const createIfMissing = c.req.query('create') !== '0'
+	await ensureSchema(c.env.DB)
+	await ensureSystemState(c.env.DB)
+	let user: UserRow | null = null
+	if (createIfMissing) {
+		await ensureReady(c, userId)
+		user = await loadUser(c.env.DB, userId)
+	} else {
+		user = await c.env.DB
+			.prepare('SELECT * FROM users WHERE user_id = ?1')
+			.bind(userId)
+			.first<UserRow>()
+	}
 	const system = await loadSystem(c.env.DB)
-	const user = await loadUser(c.env.DB, userId)
 
 	return c.json({
-		user: {
-			userId: user.user_id,
-			columnAccountId: user.column_account_id,
-			unlinkWalletId: user.unlink_wallet_id,
-			fiatCents: user.fiat_cents,
-			privatePusdCents: user.private_pusd_cents,
-		},
+		user:
+			user === null
+				? null
+				: {
+					userId: user.user_id,
+					columnAccountId: user.column_account_id,
+					unlinkWalletId: user.unlink_wallet_id,
+					fiatCents: user.fiat_cents,
+					privatePusdCents: user.private_pusd_cents,
+				},
 		system: {
 			reserveCents: system.reserve_cents,
 			opsCents: system.ops_cents,
@@ -2697,7 +3584,12 @@ app.get('/demo/paid', async (c) => {
 
 	if (challengeId === undefined || receiptId === undefined) {
 		const generatedChallengeId = createIntentId('challenge')
-		const amountCents = Number.parseInt(c.env.DEMO_PRICE_CENTS, 10) || DEFAULT_DEMO_PRICE_CENTS
+		const requestedAmount = Number.parseInt(c.req.query('amountCents') ?? '', 10)
+		const amountCents =
+			Number.isFinite(requestedAmount) && requestedAmount > 0
+				? requestedAmount
+				: Number.parseInt(c.env.DEMO_PRICE_CENTS, 10) || DEFAULT_DEMO_PRICE_CENTS
+		enforceMaxAmount(amountCents, currentMaxAmount(c.env.MAX_INTENT_AMOUNT_CENTS))
 
 		await c.env.DB
 			.prepare(
