@@ -350,11 +350,17 @@ async function saveUser(db: D1Database, user: UserRow): Promise<void> {
 }
 
 function extractBuyerProductLabel(message: string): string {
-	const cleaned = message
+	const firstClause = message
+		.split(/[.!?]/, 1)[0]
+		.replace(/^\s*(hey|hi|hello)\b[\s,:-]*/i, '')
+
+	const cleaned = firstClause
 		.replace(/\?.*$/g, '')
 		.replace(/\b(i want to buy|i want|i need|help me buy|find me|looking for|recommend)\b/gi, '')
 		.replace(/\bunder\s+\$?\d+(?:\.\d{1,2})?\b/gi, '')
 		.replace(/\bfor\s+\$?\d+(?:\.\d{1,2})?\b/gi, '')
+		.replace(/\b(?:please|thanks|thank you)\b/gi, '')
+		.replace(/[.,;:!?]+$/g, '')
 		.replace(/\s+/g, ' ')
 		.trim()
 
@@ -389,12 +395,22 @@ function makeDemoCheckoutSlug(label: string): string {
 	return slug === '' ? 'featured-item' : slug
 }
 
-function randomIntInclusive(min: number, max: number): number {
+function hashString32(value: string): number {
+	let hash = 2166136261
+	for (let index = 0; index < value.length; index += 1) {
+		hash ^= value.charCodeAt(index)
+		hash = Math.imul(hash, 16777619)
+	}
+	return hash >>> 0
+}
+
+function deterministicIntInclusive(min: number, max: number, key: string): number {
 	if (max <= min) {
 		return min
 	}
 
-	return Math.floor(Math.random() * (max - min + 1)) + min
+	const span = max - min + 1
+	return min + (hashString32(key) % span)
 }
 
 function createDynamicDemoOffer(message: string, fallbackPriceCents: number): {
@@ -408,16 +424,20 @@ function createDynamicDemoOffer(message: string, fallbackPriceCents: number): {
 	const budgetCents = parseBuyerBudgetCents(message)
 	const minCents = budgetCents !== null ? Math.max(99, Math.floor(budgetCents * 0.45)) : Math.max(99, Math.floor(fallbackPriceCents * 0.8))
 	const maxCents = budgetCents !== null ? Math.max(minCents, budgetCents - 1) : Math.max(minCents, Math.floor(fallbackPriceCents * 1.8))
-	const priceCents = randomIntInclusive(minCents, maxCents)
+	const offerKey = `${productLabel.toLowerCase()}|${budgetCents ?? 'none'}|${fallbackPriceCents}`
+	const priceCents = deterministicIntInclusive(minCents, maxCents, `${offerKey}|price`)
 	const maxDiscountCents = Math.min(
 		priceCents - 1,
 		Math.min(75, Math.max(10, Math.floor(priceCents * 0.18)))
 	)
 	const minDiscountCents = Math.min(maxDiscountCents, Math.max(5, Math.floor(priceCents * 0.05)))
-	const discountCents = maxDiscountCents > 0 ? randomIntInclusive(minDiscountCents, maxDiscountCents) : 0
+	const discountCents =
+		maxDiscountCents > 0
+			? deterministicIntInclusive(minDiscountCents, maxDiscountCents, `${offerKey}|discount`)
+			: 0
 	const finalChargeCents = Math.max(1, priceCents - discountCents)
-	const randomToken = Math.random().toString(36).slice(2, 8)
-	const checkoutLink = `https://merchant.example/checkout/${makeDemoCheckoutSlug(productLabel)}-${randomToken}`
+	const checkoutToken = hashString32(`${offerKey}|checkout`).toString(36).slice(0, 6)
+	const checkoutLink = `https://merchant.example/checkout/${makeDemoCheckoutSlug(productLabel)}-${checkoutToken}`
 
 	return {
 		productLabel,
@@ -3012,6 +3032,11 @@ app.post('/demo/assistant', async (c) => {
 	}
 
 	const priceCents = Number.parseInt(c.env.DEMO_PRICE_CENTS, 10) || DEFAULT_DEMO_PRICE_CENTS
+	const generatedOffer = createDynamicDemoOffer(userMessage, priceCents)
+	const looksLikeShopping =
+		/(buy|purchase|shop|find|looking for|recommend|need|want|upgrade|replace|for my|under\s*\$|around\s*\$|\$\s*\d+)/i.test(
+			userMessage
+		)
 	await ensureSchema(c.env.DB)
 	const buyerLinked =
 		(await c.env.DB
@@ -3031,10 +3056,16 @@ app.post('/demo/assistant', async (c) => {
 						'Use intent smalltalk for greetings or non-shopping chat.',
 						'Use intent needs_buyer when the user wants to buy something but has no linked cash account yet.',
 						'Use intent shopping_quote when the user wants to buy something and the linked cash account already exists.',
+						'If the user mentions a product, hardware, food, a budget, or a shopping need in a casual way, treat it as shopping, not smalltalk.',
+						'Messages like "RAM for my computer", "a muffin around $5", or "need a backpack under $80" are shopping requests.',
 						'If intent is needs_buyer, suggest /link-cash.',
 						'If intent is shopping_quote, suggest /approve-purchase.',
 						'Keep the reply concise, natural, and conversational.',
 						`The buyer linked account status is: ${buyerLinked ? 'linked' : 'not linked'}.`,
+						`If you are quoting an item, the product label is: ${generatedOffer.productLabel}.`,
+						`If you are quoting an item, the quoted price is: $${(generatedOffer.priceCents / 100).toFixed(2)}.`,
+						`If you are quoting an item, the next action is /approve-purchase.`,
+						`If the buyer is not linked yet, the next action is /link-cash.`,
 					].join(' '),
 				},
 				{
@@ -3134,9 +3165,6 @@ app.post('/demo/assistant', async (c) => {
 		}
 
 		if (routed === undefined) {
-			const looksLikeShopping = /(buy|purchase|shop|find|looking for|recommend|need)/i.test(
-				userMessage
-			)
 			if (!looksLikeShopping) {
 				routed = {
 					intent: 'smalltalk',
@@ -3158,12 +3186,16 @@ app.post('/demo/assistant', async (c) => {
 			}
 		}
 
-		const generatedOffer = createDynamicDemoOffer(userMessage, priceCents)
 		const productLabel =
 			routed.productLabel !== undefined && routed.productLabel !== ''
 				? routed.productLabel
 				: generatedOffer.productLabel
 		const effectiveIntent =
+			routed.intent === 'smalltalk' && looksLikeShopping
+				? buyerLinked
+					? 'shopping_quote'
+					: 'needs_buyer'
+				:
 			routed.intent === 'shopping_quote' && !buyerLinked ? 'needs_buyer' : routed.intent
 		const suggestedAction =
 			effectiveIntent === 'needs_buyer'
@@ -3172,15 +3204,53 @@ app.post('/demo/assistant', async (c) => {
 					? '/approve-purchase'
 					: ''
 		const checkoutLink = effectiveIntent === 'shopping_quote' ? generatedOffer.checkoutLink : ''
-		const replyText =
-			effectiveIntent === 'needs_buyer'
-				? `I can help you buy ${productLabel}. First, link your cash account with /link-cash, then I can quote the checkout and run the private payment flow.`
-				: effectiveIntent === 'shopping_quote'
-					? `I found ${productLabel} for $${(generatedOffer.priceCents / 100).toFixed(2)}. If you want me to proceed, reply with /approve-purchase and I will handle the private payment flow.`
-					: routed.reply
+		let responseReply = routed.reply
+		if (effectiveIntent !== routed.intent) {
+			const rewriteResult = await c.env.AI.run('@hf/nousresearch/hermes-2-pro-mistral-7b', {
+				messages: [
+					{
+						role: 'system',
+						content: [
+							'You are rewriting a shopping assistant reply for a hackathon demo.',
+							'Write one short, natural, human-sounding sentence.',
+							`The intended intent is ${effectiveIntent}.`,
+							`The next step is ${suggestedAction || 'no explicit action'}.`,
+							`The product label is ${productLabel}.`,
+							`If quoting, the quoted price is $${(generatedOffer.priceCents / 100).toFixed(2)}.`,
+							'If there is a next step, mention that exact slash command and do not mention any other slash command.',
+						].join(' '),
+					},
+					{
+						role: 'user',
+						content: userMessage,
+					},
+				],
+				max_tokens: 120,
+			})
+			const rewrittenReply =
+				typeof rewriteResult === 'string'
+					? rewriteResult.trim()
+					: typeof rewriteResult === 'object' &&
+						  rewriteResult !== null &&
+						  'response' in rewriteResult &&
+						  typeof rewriteResult.response === 'string'
+						? rewriteResult.response.trim()
+						: ''
+			if (rewrittenReply !== '') {
+				responseReply = rewrittenReply
+			}
+		}
+		if (responseReply === '') {
+			responseReply =
+				effectiveIntent === 'smalltalk'
+					? 'Hi. Tell me what you want to buy and I will help you through it.'
+					: effectiveIntent === 'needs_buyer'
+						? 'I can help with that purchase. Link your bank account first, then I can quote it.'
+						: 'I found a matching option and can take you through the private payment flow when you are ready.'
+		}
 		const responseBody = {
 			mode: 'cloudflare-ai-tools',
-			reply: replyText,
+			reply: responseReply,
 			intent: effectiveIntent,
 			suggestedAction,
 			buyerLinked,
